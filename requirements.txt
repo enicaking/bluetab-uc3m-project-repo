@@ -1,0 +1,15 @@
+pvlib
+catboost
+chardet
+xgboost
+polars
+lightgbm
+tabulate
+pandas
+numpy
+matplotlib
+seaborn
+tqdm
+scipy
+scikit-learn
+pytz
