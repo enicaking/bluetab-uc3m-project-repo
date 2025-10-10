@@ -1136,3 +1136,5 @@ for name, importance in feature_importance.items():
     plt.ylabel('Feature')
     plt.tight_layout()
     plt.show()
+
+    # TODO copiar SMOTE notebook
