@@ -43,10 +43,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import polars as pl
 import os
 from IPython.display import display
-
+from sklearn.preprocessing import OrdinalEncoder   # 👈 ESTA ES LA LÍNEA CLAVE
+from imblearn.over_sampling import SMOTENC
 from datetime import datetime, timedelta
 from itertools import combinations
 from pytz import timezone
@@ -54,10 +54,9 @@ from pytz import timezone
 from tqdm import tqdm
 from tqdm.auto import tqdm
 
-from pvlib.location import Location
 from scipy.stats import pearsonr
 
-
+from collections import Counter
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error
@@ -156,10 +155,10 @@ Calculate the correlation matrix and visualize it as a heatmap to understand the
 
 correlation_matrix = credit_df.corr()
 
-plt.figure(figsize=(12, 10))
+"""plt.figure(figsize=(12, 10))
 sns.heatmap(correlation_matrix, cmap='coolwarm')
 plt.title('Correlation Matrix of Credit Card Transaction Features')
-plt.show()
+plt.show()"""
 
 """### Summary:
 
@@ -262,10 +261,10 @@ Calculate the correlation matrix for the numerical columns and visualize it as a
 numerical_df = transactions_df.select_dtypes(include=['float64', 'int64'])
 correlation_matrix = numerical_df.corr()
 
-plt.figure(figsize=(12, 10))
+"""plt.figure(figsize=(12, 10))
 sns.heatmap(correlation_matrix, cmap='coolwarm')
 plt.title('Correlation Matrix of Transaction Features')
-plt.show()
+plt.show()"""
 
 """### Summary:
 
@@ -593,24 +592,24 @@ df["zip_code"] = df["zip_code"].astype("object")
 df["customer_id"] = df["customer_id"].astype("object")
 print(df.dtypes)
 
-# We check the Class balance between Fraudulent and Non Fraudulent transactions
+"""# We check the Class balance between Fraudulent and Non Fraudulent transactions
 print(df["Class"].value_counts())
 df["Class"].value_counts().plot(kind="bar", color="skyblue", edgecolor="black")
 plt.title("Transaction Class Balance")
 plt.xlabel("Class")
 plt.ylabel("Count")
 plt.xticks(ticks=[0, 1], labels=["Non-Fraudulent", "Fraudulent"], rotation=0)
-plt.show()
+plt.show()"""
 
 """##Numeric Variables"""
 
 numeric_df = df.select_dtypes(include="number")
 # Plot histograms for continuous numeric features
 numeric_df.hist(figsize=(20, 20), bins=25)
-plt.suptitle("Distributions of Continuous Numeric Features", fontsize=16)
-plt.show()
+"""plt.suptitle("Distributions of Continuous Numeric Features", fontsize=16)
+plt.show()"""
 
-for col in numeric_df:
+"""for col in numeric_df:
     plt.figure(figsize=(10, 6))
     sns.boxplot(data=df, y=col)
     plt.title(f'Box plot of {col}')
@@ -641,7 +640,7 @@ for col in numeric_df:
     plt.ylabel(col)
     plt.xticks([0, 1], ['Not Fraudulent', 'Fraudulent'])
     plt.tight_layout()
-    plt.show()
+    plt.show()"""
 
 """## Categorical and Binary Variables"""
 
@@ -649,7 +648,7 @@ for col in numeric_df:
 # but are stored as integers. We should also include these based on the description.
 all_categorical_cols = ["merchant_country", "customer_country", 'city']
 
-for col in all_categorical_cols:
+"""for col in all_categorical_cols:
     print(f"\nAnalysis for column: {col}")
 
     # Calculate frequency of each category
@@ -679,7 +678,7 @@ for col in all_categorical_cols:
     plt.xticks(rotation=45, ha='right')
     plt.legend(title='Fraudulence Status', labels=['Not Fraudulent', 'Fraudulent'])
     plt.tight_layout()
-    plt.show()
+    plt.show()"""
 
 """## Handle Missing Values"""
 
@@ -694,10 +693,10 @@ missing_info = pd.DataFrame({
 missing_info = missing_info[missing_info['Missing Values'] > 0].sort_values(by='Percentage', ascending=False)
 display(missing_info)
 
-plt.figure(figsize=(12, 6))
+"""plt.figure(figsize=(12, 6))
 sns.heatmap(df.isnull(), cbar=False, cmap='viridis')
 plt.title('Missing Data Heatmap')
-plt.show()
+plt.show()"""
 
 df["email"] = df["email"].fillna('Unknown', inplace=True)
 df["phone"] = df["phone"].fillna('Unknown', inplace=True)
@@ -715,7 +714,7 @@ First, we compute the correlation among all numeric variables to visualize how s
 # Compute correlation matrix for all numeric variables
 corr_matrix = df.corr(numeric_only=True)
 
-# Display correlation heatmap
+"""# Display correlation heatmap
 plt.figure(figsize=(14, 10))
 sns.heatmap(
     corr_matrix,
@@ -725,7 +724,7 @@ sns.heatmap(
     annot=False
 )
 plt.title("Correlation Matrix of Numerical Features", fontsize=16)
-plt.show()
+plt.show()"""
 
 """The correlation heatmap shows that the anonymized features (V1–V28) have very low correlations between each other.
 This means that each variable provides unique information.
@@ -750,7 +749,7 @@ display(target_corr_sorted.head(15).to_frame('corr_with_Class'))
 display(target_corr_sorted.tail(15).to_frame('corr_with_Class'))
 
 # Plot
-plt.figure(figsize=(8, 10))
+"""plt.figure(figsize=(8, 10))
 sns.barplot(
     x=target_corr_sorted.values,
     y=target_corr_sorted.index
@@ -759,7 +758,7 @@ plt.title("Correlation of Each Numeric Feature with Target (Class)")
 plt.xlabel("Correlation coefficient")
 plt.ylabel("Feature")
 plt.tight_layout()
-plt.show()
+plt.show()"""
 
 """print("Class dtype:", df['Class'].dtype)
 print("Class unique values:", df['Class'].unique()[:10])
@@ -864,12 +863,12 @@ feature_names = scaled_numeric_df.columns
 pc_df = pd.DataFrame(principal_components, columns=feature_names, index=[f'PC{i+1}' for i in range(principal_components.shape[0])])
 display(pc_df)
 
-plt.figure(figsize=(12, 8))
+"""plt.figure(figsize=(12, 8))
 sns.heatmap(pc_df.T, cmap='viridis', annot=False)
 plt.title('Contribution of Original Features to Principal Components')
 plt.xlabel('Principal Components')
 plt.ylabel('Original Features')
-plt.show()
+plt.show()"""
 
 """# Mutual Information
 
@@ -898,17 +897,17 @@ print("Mutual Information Scores (sorted):")
 display(mutual_info_series_sorted)
 
 # Visualize the mutual information scores
-plt.figure(figsize=(10, 6))
+"""plt.figure(figsize=(10, 6))
 sns.barplot(x=mutual_info_series_sorted.values, y=mutual_info_series_sorted.index)
 plt.title('Mutual Information Scores between Features and Class')
 plt.xlabel('Mutual Information Score')
 plt.ylabel('Feature')
 plt.tight_layout()
-plt.show()
+plt.show()"""
 
 """# MRmr"""
 
-from sklearn.feature_selection import mutual_info_classif
+"""from sklearn.feature_selection import mutual_info_classif
 import numpy as np
 import pandas as pd
 
@@ -1012,11 +1011,7 @@ import numpy as np
 import pandas as pd
 
 def center_K(K):
-    """Center a kernel matrix K, i.e., removes the data mean in the feature space.
 
-    Args:
-        K: kernel matrix
-    """
     size_1,size_2 = K.shape;
     D1 = K.sum(axis=0)/size_1
     D2 = K.sum(axis=1)/size_2
@@ -1026,12 +1021,7 @@ def center_K(K):
     return K_n
 
 def HSIC_rbf(X_data, Y_data):
-    """Compute HSIC value between input and output data using a RBF kernel
-
-    Args:
-        X_data: input data (features)
-        Y_data: output data (target)
-    """
+    
     # Ensure X_data and Y_data are 2D arrays
     if X_data.ndim==1:
         X_data=X_data[:,np.newaxis]
@@ -1072,13 +1062,13 @@ plt.title('HSIC Scores between Features and Class (RBF Kernel)')
 plt.xlabel('HSIC Score')
 plt.ylabel('Feature')
 plt.tight_layout()
-plt.show()
+plt.show()"""
 
 
 
 
 
-# Separate features (X) and target (y)
+"""# Separate features (X) and target (y)
 X = df_numerical.drop('Class', axis=1)
 y = df_numerical['Class']
 
@@ -1124,9 +1114,9 @@ for name, model in models.items():
 # Display the results
 results_df = pd.DataFrame(results).T
 display(results_df)
-
+"""
 # Display feature importance
-for name, importance in feature_importance.items():
+"""for name, importance in feature_importance.items():
     print(f"\nFeature Importance for {name}:")
     display(importance)
     plt.figure(figsize=(10, 6))
@@ -1135,6 +1125,126 @@ for name, importance in feature_importance.items():
     plt.xlabel('Importance')
     plt.ylabel('Feature')
     plt.tight_layout()
-    plt.show()
+    plt.show()"""
 
     # TODO copiar SMOTE notebook
+
+
+
+# Separate Features (X) and Target (y)
+
+X = df.drop('Class', axis=1)
+y = df['Class']
+
+print("Shape of X:", X.shape)
+print("Shape of y:", y.shape)
+
+
+# Separate between numerical and categorical features
+cat_cols = list(X.select_dtypes(include=['object']).columns)
+num_cols = list(X.select_dtypes(include=['float64', 'int64']).columns)
+
+print(cat_cols)
+
+
+# Removed id columns
+id_cols = [
+    'transaction_id', 'customer_id', 'device_id',
+    'ip_address', 'email', 'phone', 'name'
+]
+X = X.drop(columns=id_cols, errors='ignore')
+
+
+X['join_date'] = pd.to_datetime(X['join_date'], errors='coerce')                    # Convert to datetime
+X['customer_days_since_join'] = (X['join_date'].max() - X['join_date']).dt.days     # Calculate days since join
+X = X.drop(columns=['join_date'])
+
+
+top= 20
+def rare_values(series, top=top):
+    top_vals = series.value_counts().nlargest(top).index        # Get the top N most frequent values
+    return series.where(series.isin(top_vals), 'Other')         # Replace rare values with 'Other'
+
+for col in ['merchant_country', 'customer_country', 'city', 'merchant', 'zip_code']: # TODO hacerlo automatico en vez de pasando la lista de variables
+    if X[col].nunique() > top:                                          # Only apply if there are more than 'top' unique values
+        X[col] = rare_values(X[col], top=top)                           # Replace rare values
+        print(f"Reduced categories in {col} to top {top} + 'Other'")
+
+
+# PARAMETERS
+knn = 3     # Number of nearest neighbors for SMOTE
+
+# Recalculate the categorical columns and their indices after dropping columns
+cat_cols = list(X.select_dtypes(include='object').columns)
+cat_idx = [X.columns.get_loc(c) for c in cat_cols]
+
+# Codify categories to integers                                      # TODO meterlo en un transformer para uqe lo haga directo/hacer una funcion, a lo mejor usar one hot para alguna de las columans
+encode = OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1)   # Handle unknown categories in test set
+X[cat_cols] = encode.fit_transform(X[cat_cols])                                 # Fit and transform the categorical columns
+
+# Split into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+# Apply SMOTENC to the training data
+print("Before SMOTENC:", Counter(y_train))
+
+smotenc = SMOTENC(categorical_features=cat_idx, random_state=42, k_neighbors=knn) 
+X_train_res, y_train_res = smotenc.fit_resample(X_train, y_train)
+
+print("After SMOTENC:", Counter(y_train_res))
+
+# =============================
+# 🧠  Entrenamiento de Modelos
+# =============================
+
+from lightgbm import LGBMClassifier
+from catboost import CatBoostClassifier
+from xgboost import XGBClassifier
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
+
+# 1️⃣ LightGBM
+lgb_model = LGBMClassifier(
+    n_estimators=300,
+    learning_rate=0.05,
+    max_depth=-1,
+    random_state=42
+)
+lgb_model.fit(X_train_res, y_train_res)
+y_pred_lgb = lgb_model.predict(X_test)
+
+print("===== LightGBM =====")
+print(classification_report(y_test, y_pred_lgb))
+print("ROC AUC:", roc_auc_score(y_test, lgb_model.predict_proba(X_test)[:, 1]))
+
+
+# 2️⃣ CatBoost
+cat_model = CatBoostClassifier(
+    iterations=300,
+    learning_rate=0.05,
+    depth=8,
+    verbose=False,
+    random_seed=42
+)
+cat_model.fit(X_train_res, y_train_res)
+y_pred_cat = cat_model.predict(X_test)
+
+print("\n===== CatBoost =====")
+print(classification_report(y_test, y_pred_cat))
+print("ROC AUC:", roc_auc_score(y_test, cat_model.predict_proba(X_test)[:, 1]))
+
+
+# 3️⃣ XGBoost
+xgb_model = XGBClassifier(
+    n_estimators=300,
+    learning_rate=0.05,
+    max_depth=8,
+    random_state=42,
+    use_label_encoder=False,
+    eval_metric='logloss'
+)
+xgb_model.fit(X_train_res, y_train_res)
+y_pred_xgb = xgb_model.predict(X_test)
+
+print("\n===== XGBoost =====")
+print(classification_report(y_test, y_pred_xgb))
+print("ROC AUC:", roc_auc_score(y_test, xgb_model.predict_proba(X_test)[:, 1]))
