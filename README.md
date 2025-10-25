@@ -1,14 +1,23 @@
 # bluetab-uc3m-project-repo
-Colaboración entre estudiantes de la UC3M con Bluetab(IBM) para la clase 'Data Science Project'. Proyecto desarrollado por estudiantes Enica King, Andrea López, César Rodríguez, Emma Rodríguez y Silvia Diez bajo la supervisión del profesor Fco. Javier Nogales, trabajando junto con María Angeles Quesada, Juan Francisco Huete, y Cruz Mateo de Bluetab.
+Collaboration between UC3M students with Bluetab(IBM) for the 'Data Science Project' class. This project was carried out by Enica King, Andrea López, César Rodríguez, Emma Rodríguez and Silvia Diez under the supervision of professor Fco. Javier Nogales and the team at Bluetab: María Angeles Quesada, Juan Francisco Huete, David Eduardo Millán, and Cruz Mateo.
 
-# Objetivo General
-Desarrollar un análisis integral de patrones de transacciones financieras,
-utilizando técnicas avanzadas de Machine Learning (ML), para clasificar con alta precisión la
-probabilidad de fraude. Se busca mejorar la capacidad de detección de actividades ilícitas,
-minimizar las pérdidas económicas y fortalecer la confianza en las operaciones financieras,
-contribuyendo a la resiliencia del sector bancario y asegurador.
+# Objectives
 
-# Etapas del Proyecto
+The main goals of the project were to use advanced Machine Learning (ML) techniques in order to accurately classify cases of financial fraud. Doing so would improve the detection capacity of illegal activity, minimize economic losses, and strengthen banking and insurance by securing financial operations.
+
+# File Structure
+
+# Raw Data and Exploration
+# Data Merging and Integration
+# EDA on Merged Dataset
+
+# Data Preprocessing and Class Balancing
+## SMOTE
+## Feature Engineering
+
+
+------
+
 ## Recopilación y Análisis del Dataset Principal de Fraude
 ### Acceso y Análisis del Dataset Principal de Fraude:
 ### Diseño y Estructuración del Modelo de Datos
