@@ -1,5 +1,5 @@
 # bluetab-uc3m-project-repo
-Colaboración entre estudiantes de la UC3M con Bluetab(IBM) para la clase 'Data Science Project'. Proyecto desarrollado por estudiantes Enica King, Andrea López, César Rodríguez, Emma Rodríguez y Silvia Diez bajo la supervisión del profesor Fco. Javier Nogales, trabajando junto con María Angeles Quesada, Juan Francisco Huete, y Cruz Mateo de Bluetab.
+Colaboración entre estudiantes de la UC3M con Bluetab(IBM) para la clase 'Data Science Project'. Proyecto desarrollado por estudiantes Enica King, Andrea López, César Rodríguez, Emma Rodríguez y Silvia Díez bajo la supervisión del profesor Fco. Javier Nogales, trabajando junto con María Angeles Quesada, Juan Francisco Huete, y Cruz Mateo de Bluetab.
 
 # Objetivo General
 Desarrollar un análisis integral de patrones de transacciones financieras,
