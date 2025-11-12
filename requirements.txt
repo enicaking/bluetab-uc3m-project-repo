@@ -5,6 +5,7 @@ xgboost
 polars
 lightgbm
 tabulate
+imbalanced-learn
 pandas
 numpy
 matplotlib
