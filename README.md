@@ -8,6 +8,11 @@ probabilidad de fraude. Se busca mejorar la capacidad de detección de actividad
 minimizar las pérdidas económicas y fortalecer la confianza en las operaciones financieras,
 contribuyendo a la resiliencia del sector bancario y asegurador.
 
+# Setup
+Once you have opened the project on your local browser, run the following line in the terminal
+`pip install -r requirements.txt` 
+to install all the required packages
+
 # Etapas del Proyecto
 ## Recopilación y Análisis del Dataset Principal de Fraude
 ### Acceso y Análisis del Dataset Principal de Fraude:
