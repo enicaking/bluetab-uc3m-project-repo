@@ -23,7 +23,7 @@ app.layout = html.Div(style=DARK_STYLE, children=[
             dbc.NavItem(dcc.Link(page['name'], href=page["relative_path"], className="nav-link"))
             for page in dash.page_registry.values()
         ],
-        brand="Fraud Analytics Dashboard",
+        brand="UC3M-Bluetab Fraud Analytics Dashboard",
         brand_href="#",
         color="black",
         dark=True,

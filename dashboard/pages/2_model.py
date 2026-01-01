@@ -9,10 +9,13 @@ dash.register_page(__name__, name="Model Metrics")
 # --- Custom Styling ---
 DARK_CARD = {"background-color": "#111", "border": "1px solid #333", "border-radius": "10px", "padding": "20px"}
 
-# --- Data Preparation ---
+# DATA PREPARATION 
 models = ['Logistic Regression', 'Random Forest', 'XGBoost']
 f1_scores = [0.82, 0.88, 0.91]
 f2_scores = [0.85, 0.92, 0.95]
+
+# Loading datasets for data synthesis comparison
+
 
 # 1. Sleek Comparison Bar Chart
 fig_metrics = go.Figure()

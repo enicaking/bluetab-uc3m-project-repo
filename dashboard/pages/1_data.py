@@ -28,38 +28,74 @@ fraud_df = df.groupby('customer_country')['is_fraud'].mean().reset_index()
 fraud_df.columns = ['country', 'metric_value']
 fraud_df['metric_value'] *= 100
 
+# LAYOUT
 # --- Page Layout ---
 layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
-    # External Font Import
     html.Link(href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap", rel="stylesheet"),
     
+    # Title Row
     dbc.Row([
-        dbc.Col(html.H1("Dataset Breakdown", className="text-center my-4", 
-                        style={"font-weight": "700", "letter-spacing": "-1px"}), width=12)
+        dbc.Col(html.H1("Global Fraud Analytics", className="text-start my-4", 
+                        style={"font-weight": "700", "padding-left": "15px"}), width=12)
     ]),
 
+    # Main Content Row
     dbc.Row([
+        
+        # LEFT COLUMN: Stats & Controls (Width: 3)
         dbc.Col([
+            # Stats Card 1: Total Volume
+            dbc.Card([
+                dbc.CardBody([
+                    html.H6("Total Transactions", className="text-muted"),
+                    html.H3(f"{len(df)}", style={"color": "#00d4ff"})
+                ])
+            ], style={"background": "#111", "border": "1px solid #333", "margin-bottom": "15px"}),
+
+            # Stats Card 2: Median Transaction Amount
+            dbc.Card([
+                dbc.CardBody([
+                    html.H6("Median Transaction Amount", className="text-muted"),
+                    html.H3(f"{(df['is_fraud'].median()*100):.1f}%", style={"color": "#00d4ff"})
+                ])
+            ], style={"background": "#111", "border": "1px solid #333", "margin-bottom": "15px"}),
+
+            # Stats Card 3: Fraud Rate
+            dbc.Card([
+                dbc.CardBody([
+                    html.H6("Avg. Fraud Rate", className="text-muted"),
+                    html.H3(f"{(df['is_fraud'].mean()*100):.1f}%", style={"color": "#ff0055"})
+                ])
+            ], style={"background": "#111", "border": "1px solid #333", "margin-bottom": "30px"}),
+
+            # Metric Toggle
             html.Div([
-                html.Label("Metric Toggle", style={"margin-bottom": "10px", "opacity": "0.7"}),
+                html.Label("View Mode", style={"margin-bottom": "10px", "opacity": "0.7", "font-weight": "bold"}),
                 dcc.RadioItems(
                     id='map-metric-selector',
                     options=[
-                        {'label': ' Total Volume', 'value': 'volume'},
-                        {'label': ' Fraud Rate (%)', 'value': 'rate'}
+                        {'label': ' Transaction Volume', 'value': 'volume'},
+                        {'label': ' Fraud Probability', 'value': 'rate'}
                     ],
                     value='volume',
-                    inline=True,
-                    inputStyle={"margin-right": "10px", "margin-left": "20px"},
-                    style={"padding": "10px", "border-radius": "8px", "background": "#111"}
+                    labelStyle={'display': 'block', 'margin-bottom': '10px'}, # Stacked vertically
+                    inputStyle={"margin-right": "10px"},
+                    style={"padding": "20px", "border-radius": "8px", "background": "#111", "border": "1px solid #222"}
                 ),
-            ], className="d-flex flex-column align-items-center")
-        ], width=12)
-    ]),
+            ])
+        ], width=12, lg=3), # Takes 3/12 width on large screens
 
-    dbc.Row([
-        dbc.Col(dcc.Graph(id='interactive-map', config={'displayModeBar': False}), width=12)
-    ], style={"margin-top": "20px"})
+        # RIGHT COLUMN: The Map (Width: 9)
+        dbc.Col([
+            dbc.Card([
+                dcc.Graph(
+                    id='interactive-map', 
+                    config={'displayModeBar': False},
+                    style={"height": "70vh"} # Higher map height for better visibility
+                )
+            ], style={"background": "#111", "border": "1px solid #333", "padding": "10px"})
+        ], width=12, lg=9)
+    ], className="g-4") # 'g-4' adds a nice gap between columns
 ])
 
 # --- Callback ---

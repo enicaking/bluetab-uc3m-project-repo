@@ -1,5 +1,6 @@
 import dash
 from dash import html, dcc, callback, Input, Output, State
+from dash import callback_context
 import dash_bootstrap_components as dbc
 
 dash.register_page(__name__, name="Simulator")
@@ -8,10 +9,12 @@ dash.register_page(__name__, name="Simulator")
 DARK_CARD = {"background-color": "#111", "border": "1px solid #333", "padding": "20px", "border-radius": "10px"}
 
 layout = dbc.Container(fluid=True, children=[
-    html.H2("Real-Time Transaction Simulator", className="my-4", style={"font-weight": "700"}),
+    html.H2("Real-Time Transaction Simulator", className="text-center my-4", style={"font-weight": "700"}),
     
+    # We wrap the columns in a Row and center the content of that Row
     dbc.Row([
-        # --- INPUT COLUMN ---
+        
+        # --- INPUT COLUMN (Width 5) ---
         dbc.Col([
             html.Div(style=DARK_CARD, children=[
                 html.Label("Transaction Amount ($)", className="text-muted"),
@@ -23,7 +26,7 @@ layout = dbc.Container(fluid=True, children=[
                     options=['USA', 'Spain', 'UK', 'France', 'Germany', 'China', 'Brazil'],
                     value='USA',
                     className="mb-3",
-                    style={"color": "#000"} # Dropdown text usually needs to be dark for readability
+                    style={"color": "#000"} 
                 ),
 
                 html.Label("Merchant Country", className="text-muted"),
@@ -36,60 +39,73 @@ layout = dbc.Container(fluid=True, children=[
                 ),
 
                 html.Div([
-                html.Label("Time of Day: ", className="text-muted"),
-                html.Span(id='time-display', style={"color": "#00d4ff", "font-weight": "bold", "margin-left": "10px"}),
-                dcc.Slider(
-                    0, 23, 1, 
-                    value=12, 
-                    id='time-slider', 
-                    marks={0: '00:00', 12: '12:00', 23: '23:00'},
-                    updatemode='drag' # This makes the value update as you slide, not just when you let go
-                ),
-            ], className="mb-3"),
+                    html.Label("Time of Day: ", className="text-muted"),
+                    html.Span(id='time-display', style={"color": "#00d4ff", "font-weight": "bold", "margin-left": "10px"}),
+                    dcc.Slider(
+                        0, 23, 1, 
+                        value=12, 
+                        id='time-slider', 
+                        marks={0: '00:00', 6: '6:00', 12: '12:00', 18: '18:00', 23: '23:00'},
+                        updatemode='drag'
+                    ),
+                ], className="mb-3"),
 
-            dbc.Button('Run Fraud Analysis', id='sim-button', color="primary", className="mt-4 w-100", n_clicks=0),
+                dbc.Row([
+                    dbc.Col(dbc.Button('Run Analysis', id='sim-button', color="primary", className="w-100", n_clicks=0), width=8),
+                    dbc.Col(dbc.Button('Reset', id='reset-button', color="secondary", outline=True, className="w-100", n_clicks=0), width=4),
+                ], className="mt-4")
             ])
-        ], width=4),
+        ], width=10), # Smaller width to fit side-by-side
 
-        # --- OUTPUT COLUMN ---
+        # --- OUTPUT COLUMN (Width 5) ---
         dbc.Col([
-            html.Div(style={**DARK_CARD, "height": "100%", "display": "flex", "align-items": "center", "justify-content": "center", "text-align": "center"}, children=[
+            html.Div(style={**DARK_CARD, "height": "100%", "display": "flex", "flex-direction": "column", "align-items": "center", "justify-content": "center", "text-align": "center"}, children=[
                 html.Div(id='prediction-output')
             ])
-        ], width=8)
-    ])
+        ], width=10)
+
+    ], className="justify-content-center g-4") # This centers the two columns and adds a gap (g-4)
 ])
 
 @callback(
     Output('prediction-output', 'children'),
+    Output('amount-input', 'value'),
+    Output('cust-country-input', 'value'),
+    Output('merch-country-input', 'value'),
+    Output('time-slider', 'value'),
     Input('sim-button', 'n_clicks'),
+    Input('reset-button', 'n_clicks'), # New Input
     State('amount-input', 'value'),
     State('cust-country-input', 'value'),
     State('merch-country-input', 'value'),
     State('time-slider', 'value')
 )
-def predict_fraud(n_clicks, amount, cust_country, merch_country, time_val):
-    if n_clicks > 0:
-        # LOGIC: High risk if countries don't match or amount is very high
-        is_mismatch = cust_country != merch_country
-        
+def predict_or_reset(sim_clicks, reset_clicks, amount, cust, merch, time_val):
+    # Determine which button was actually clicked
+    ctx = callback_context
+    if not ctx.triggered:
+        return html.H3("Awaiting Input...", style={"opacity": "0.5"}), 100, 'USA', 'USA', 12
+    
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
+    # --- RESET LOGIC ---
+    if button_id == 'reset-button':
+        return html.H3("Awaiting Input...", style={"opacity": "0.5"}), 100, 'USA', 'USA', 12
+
+    # --- SIMULATION LOGIC ---
+    if sim_clicks > 0:
+        is_mismatch = cust != merch
         if amount > 5000 or (amount > 1000 and is_mismatch):
-            return html.Div([
+            result = html.Div([
                 html.H1("⚠️ HIGH RISK", style={"color": "#ff0055", "text-shadow": "0 0 15px #ff0055"}),
-                html.P(f"Analysis: Transaction of ${amount} from {cust_country} to {merch_country} at {time_val}:00 flagged for review.")
+                html.P(f"Transaction of ${amount} flagged.")
             ])
         else:
-            return html.Div([
+            result = html.Div([
                 html.H1("✅ APPROVED", style={"color": "#00ffcc", "text-shadow": "0 0 15px #00ffcc"}),
-                html.P("Transaction pattern appears normal.")
+                html.P("Transaction appears normal.")
             ])
-            
-    return html.H3("Awaiting Input...", style={"opacity": "0.5"})
+        # Return the result + the current values (so they don't change when you click Analyze)
+        return result, amount, cust, merch, time_val
 
-@callback(
-    Output('time-display', 'children'),
-    Input('time-slider', 'value')
-)
-def update_time_display(selected_hour):
-    # Formats the number into a 00:00 string
-    return f"{selected_hour:02d}:00"
+    return html.H3("Awaiting Input...", style={"opacity": "0.5"}), 100, 'USA', 'USA', 12
