@@ -30,7 +30,7 @@ app.layout = html.Div(style=DARK_STYLE, children=[
         className="mb-4",
         style={"border-bottom": "1px solid #333"}
     ),
-
+ 
     # This is where the pages (like data_explore.py) will be injected
     dbc.Container([
         dash.page_container
