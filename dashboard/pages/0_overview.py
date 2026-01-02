@@ -27,6 +27,44 @@ stats = get_summary_stats(df)
 temporal_data = get_temporal_data(df, freq='H') if df is not None else None
 country_stats = get_country_stats(df) if df is not None else None
 
+def create_country_fraud_chart(country_stats):
+    if country_stats is None or country_stats.empty:
+        return go.Figure()
+
+    cs = country_stats.head(10).copy()
+
+    fig = px.bar(
+        cs,
+        x="country",
+        y="fraud_rate_smoothed_pct",
+        color="fraud_rate_smoothed_pct",
+        color_continuous_scale="Reds",
+        hover_data={
+            "total": True,
+            "fraud_count": True,
+            "fraud_rate_pct": ":.2f",
+            "fraud_rate_smoothed_pct": ":.2f",
+        },
+        title=""
+    )
+
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font={"family": "Inter", "color": "white"},
+        xaxis_title="Country",
+        yaxis_title="Fraud Rate (smoothed, %)",
+        margin=dict(l=20, r=20, t=20, b=40),
+        showlegend=False,
+    )
+
+    fig.update_xaxes(tickangle=-30)
+
+    return fig
+fig_countries = create_country_fraud_chart(country_stats)
+
+
 # Create KPI Cards
 def create_kpi_card(title, value, subtitle="", color="#00d4ff", icon=""):
     return dbc.Card([
@@ -234,23 +272,7 @@ layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
                 dbc.CardHeader("Top Countries by Fraud Rate", className="text-danger"),
                 dbc.CardBody([
                     dcc.Graph(
-                        figure=px.bar(
-                            country_stats.head(10) if country_stats is not None else pd.DataFrame(),
-                            x='country',
-                            y='fraud_rate',
-                            color='fraud_rate',
-                            color_continuous_scale='Reds',
-                            title=""
-                        ).update_layout(
-                            template="plotly_dark",
-                            paper_bgcolor='rgba(0,0,0,0)',
-                            plot_bgcolor='rgba(0,0,0,0)',
-                            font={'family': 'Inter', 'color': 'white'},
-                            xaxis_title="Country",
-                            yaxis_title="Fraud Rate (%)",
-                            margin=dict(l=20, r=20, t=20, b=40),
-                            showlegend=False
-                        ) if country_stats is not None else go.Figure(),
+                        figure=fig_countries,
                         config={'displayModeBar': False}
                     )
                 ])

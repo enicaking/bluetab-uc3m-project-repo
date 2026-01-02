@@ -186,80 +186,64 @@ def get_model_metrics(dataset_key=None):
         'roc_auc': roc_auc_scores,
     }
 
-
-def calculate_roi_metrics(  # TODO: se puede incluir predicciones
+def calculate_roi_metrics(
     df,
     model_metrics: dict,
-    model_name: str = "LightGBM",
-    cost_per_investigation: float = 50,
+    model_name: str = "RandomForest",
+    fraud_cost_multiplier: float = 4.41,
     recovery_rate: float = 1.0,
 ):
     """
-    ROI estimation using real model precision/recall from saved results.
+    Base ROI model aligned with financial report.
+    Uses 4.41x multiplier (includes OpEx, legal, investigation).
     """
 
     if df is None or 'Amount' not in df.columns or 'Class' not in df.columns:
         return {}
 
-    # 1) get precision/recall for chosen model
     models = model_metrics.get("models", [])
     if model_name not in models:
-        if not models:
+        model_name = models[0] if models else None
+        if model_name is None:
             return {}
-        model_name = models[0]
 
     idx = models.index(model_name)
+    precision = max(float(model_metrics["precision"][idx]), 1e-9)
+    recall = max(min(float(model_metrics["recall"][idx]), 1.0), 0.0)
 
-    # usa .get para evitar KeyError si faltan keys
-    precision_list = model_metrics.get("precision", [])
-    recall_list = model_metrics.get("recall", [])
-    if idx >= len(precision_list) or idx >= len(recall_list):
-        return {}
-
-    precision = float(precision_list[idx])
-    recall = float(recall_list[idx])
-
-    # safety
-    precision = max(precision, 1e-9)
-    recall = max(min(recall, 1.0), 0.0)
-
-    # 2) fraud totals from data
     fraud_df = df[df['Class'] == 1]
-    total_fraud_amount = float(fraud_df['Amount'].sum())
-    total_frauds = int(len(fraud_df))
+    total_fraud_amount = fraud_df['Amount'].sum()
 
-    # 3) expected detected frauds and recovered amount
-    detected_frauds = total_frauds * recall
-    recovered_amount = total_fraud_amount * recall * recovery_rate
+    detected_amount = total_fraud_amount * recall
+    recovered_value = detected_amount * fraud_cost_multiplier * recovery_rate
 
-    # 4) alerts and false positives
-    total_alerts = detected_frauds / precision
-    false_positives = total_alerts - detected_frauds
-
-    investigation_cost = total_alerts * cost_per_investigation
-    net_benefit = recovered_amount - investigation_cost
+    undetected_loss = total_fraud_amount * (1 - recall) * fraud_cost_multiplier
 
     return {
         "model_used": model_name,
         "precision": precision,
         "recall": recall,
-        "total_fraud_amount": total_fraud_amount,
-        "fraud_detected_pct": recall * 100,
-        "alerts_generated": int(round(total_alerts)),
-        "false_positives": int(round(false_positives)),
-        "investigation_cost": float(investigation_cost),
-        "recovered_amount": float(recovered_amount),
-        "net_benefit": float(net_benefit),
+        "total_fraud_amount": float(total_fraud_amount),
+        "recovered_economic_value": float(recovered_value),
+        "undetected_fraud_cost": float(undetected_loss),
+        "net_benefit": float(recovered_value - undetected_loss),
     }
 
 
 def calculate_roi_metrics_auto(
     df,
     dataset_key=None,
-    model_name="LightGBM",
-    cost_per_investigation=50,
-    recovery_rate=1.0
+    model_name="RandomForest",
 ):
+    """
+    Automatic ROI calculation aligned with the financial report.
+
+    Assumptions:
+    - Fraud cost multiplier (4.41x) already includes OpEx, investigation,
+      legal and recovery costs.
+    - Full recovery of detected fraud (base case).
+    """
+
     model_metrics = get_model_metrics(dataset_key=dataset_key)
     if not model_metrics:
         return {}
@@ -268,6 +252,7 @@ def calculate_roi_metrics_auto(
         df=df,
         model_metrics=model_metrics,
         model_name=model_name,
-        cost_per_investigation=cost_per_investigation,
-        recovery_rate=recovery_rate
+        fraud_cost_multiplier=4.41,  # standard LexisNexis
+        recovery_rate=1.0            # base case from the report
     )
+
