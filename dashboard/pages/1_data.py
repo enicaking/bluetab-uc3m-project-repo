@@ -16,13 +16,23 @@ from utils import load_data, get_country_stats
 dash.register_page(__name__, path='/data', name="Data Exploration", order=1)
 
 # --- Styling Constants ---
-DARK_STYLE = {
-    "background-color": "#000000",
-    "color": "#FFFFFF",
-    "font-family": "'Inter', sans-serif",
-}
-
-DARK_CARD = {"background": "#111", "border": "1px solid #333", "border-radius": "10px", "padding": "20px"}
+# Import design system
+try:
+    from design_system import (
+        DARK_STYLE, CARD_STYLE, PANEL_STYLE, KPI_CARD_STYLE,
+        ACCENT_PRIMARY, ACCENT_DANGER, get_gradient_text_style
+    )
+    DARK_CARD = KPI_CARD_STYLE
+except ImportError:
+    DARK_STYLE = {
+        "background-color": "#0a0a0a",
+        "color": "#FFFFFF",
+        "font-family": "'Inter', sans-serif",
+    }
+    DARK_CARD = {"background": "#141414", "border": "1px solid #2a2a2a", "border-radius": "12px", "padding": "20px", "boxShadow": "0 4px 12px rgba(0,0,0,0.4)"}
+    ACCENT_PRIMARY = "#00d4ff"
+    ACCENT_DANGER = "#ff0055"
+    def get_gradient_text_style(*args, **kwargs): return {}
 
 # Load data
 df = load_data("df_exp_50_2.csv")
@@ -32,8 +42,23 @@ layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
     
     # Title
     dbc.Row([
-        dbc.Col(html.H1("Exploratory Data Analysis", className="my-4", style={"font-weight": "700"}), width=12),
-        dbc.Col(html.P("Comprehensive analysis of transaction patterns and fraud indicators", className="text-muted mb-4"), width=12)
+        dbc.Col([
+            html.H1(
+                "Exploratory Data Analysis", 
+                className="my-4", 
+                style={
+                    **get_gradient_text_style(),
+                    "font-weight": "700",
+                    "fontSize": "2.5rem",
+                    "letterSpacing": "-1px"
+                }
+            ),
+            html.P(
+                "Comprehensive analysis of transaction patterns and fraud indicators", 
+                className="text-muted mb-4",
+                style={"fontSize": "0.95rem", "opacity": "0.8"}
+            )
+        ], width=12)
     ]),
     
     # Dataset Selector

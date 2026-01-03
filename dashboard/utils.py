@@ -57,36 +57,81 @@ def get_temporal_data(df, freq='H'):
 def get_country_stats(df, min_tx=100, m=500):
     """
     Country stats for dashboard.
-    - min_tx: minimum number of transactions to appear in the ranking
-    - m: smoothing force (higher => more 'pull' towards the global mean)
+
+    Returns a DataFrame with:
+      - total transactions
+      - fraud_count
+      - fraud_rate_pct (raw)
+      - fraud_rate_smoothed_pct (Bayesian smoothing)
+      - total_amount (sum Amount for all tx)
+      - fraud_amount (sum Amount for fraud tx only)  <-- needed for "impact" ranking
+
+    Args:
+        min_tx: minimum number of transactions to appear in the ranking
+        m: smoothing strength (higher => more pull towards global mean)
     """
-    if df is None or 'customer_country' not in df.columns or 'Class' not in df.columns:
+    if df is None or df.empty:
+        return None
+    if "customer_country" not in df.columns or "Class" not in df.columns:
         return None
 
-    cs = df.groupby('customer_country').agg(
-        total=('Class', 'count'),
-        fraud_count=('Class', 'sum'),
-        total_amount=('Amount', 'sum') if 'Amount' in df.columns else ('Class', 'count')
-    ).reset_index().rename(columns={'customer_country': 'country'})
+    has_amount = "Amount" in df.columns
 
-    # global rate (0-1)
-    global_rate = df['Class'].mean()
+    dff = df.copy()
 
-    # raw rate (0-1)
-    cs['fraud_rate'] = cs['fraud_count'] / cs['total']
+    # Base aggregation
+    agg_dict = {
+        "Class": ["count", "sum"],
+    }
+    if has_amount:
+        agg_dict["Amount"] = "sum"
 
-    # smoothed rate (0-1)
-    cs['fraud_rate_smoothed'] = (cs['fraud_count'] + m * global_rate) / (cs['total'] + m)
+    cs = (
+        dff.groupby("customer_country")
+        .agg(agg_dict)
+        .reset_index()
+    )
 
-    # to %
-    cs['fraud_rate_pct'] = cs['fraud_rate'] * 100
-    cs['fraud_rate_smoothed_pct'] = cs['fraud_rate_smoothed'] * 100
+    # Flatten columns
+    if has_amount:
+        cs.columns = ["country", "total", "fraud_count", "total_amount"]
+    else:
+        cs.columns = ["country", "total", "fraud_count"]
 
-    # filter by volume
-    cs = cs[cs['total'] >= min_tx].copy()
+    # Fraud amount (real impact): sum Amount where Class==1 by country
+    if has_amount:
+        fraud_amount = (
+            dff.loc[dff["Class"] == 1]
+            .groupby("customer_country")["Amount"]
+            .sum()
+            .rename("fraud_amount")
+            .reset_index()
+            .rename(columns={"customer_country": "country"})
+        )
+        cs = cs.merge(fraud_amount, on="country", how="left")
+        cs["fraud_amount"] = cs["fraud_amount"].fillna(0.0)
+    else:
+        cs["total_amount"] = cs["total"]
+        cs["fraud_amount"] = cs["fraud_count"]
 
-    # sort by the smoothed rate
-    return cs.sort_values('fraud_rate_smoothed_pct', ascending=False)
+    # Global rate (0-1)
+    global_rate = float(dff["Class"].mean())
+
+    # Raw rate (0-1)
+    cs["fraud_rate"] = cs["fraud_count"] / cs["total"]
+
+    # Smoothed rate (0-1)
+    cs["fraud_rate_smoothed"] = (cs["fraud_count"] + m * global_rate) / (cs["total"] + m)
+
+    # Percent versions
+    cs["fraud_rate_pct"] = cs["fraud_rate"] * 100
+    cs["fraud_rate_smoothed_pct"] = cs["fraud_rate_smoothed"] * 100
+
+    # Filter by volume
+    cs = cs.loc[cs["total"] >= min_tx].copy()
+
+    # Default sort: smoothed fraud rate
+    return cs.sort_values("fraud_rate_smoothed_pct", ascending=False)
 
 
 def get_model_metrics(dataset_key=None):

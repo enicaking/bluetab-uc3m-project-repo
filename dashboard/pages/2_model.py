@@ -15,13 +15,25 @@ from utils import get_model_metrics
 
 dash.register_page(__name__, path='/model', name="Model Performance", order=2)
 
-DARK_STYLE = {
-    "background-color": "#000000",
-    "color": "#FFFFFF",
-    "font-family": "'Inter', sans-serif",
-}
-
-DARK_CARD = {"background": "#111", "border": "1px solid #333", "border-radius": "10px", "padding": "20px"}
+# Import design system
+try:
+    from design_system import (
+        DARK_STYLE, CARD_STYLE, PANEL_STYLE, KPI_CARD_STYLE,
+        ACCENT_PRIMARY, ACCENT_DANGER, ACCENT_SUCCESS,
+        get_gradient_text_style
+    )
+    DARK_CARD = KPI_CARD_STYLE
+except ImportError:
+    DARK_STYLE = {
+        "background-color": "#0a0a0a",
+        "color": "#FFFFFF",
+        "font-family": "'Inter', sans-serif",
+    }
+    DARK_CARD = {"background": "#141414", "border": "1px solid #2a2a2a", "border-radius": "12px", "padding": "20px", "boxShadow": "0 4px 12px rgba(0,0,0,0.4)"}
+    ACCENT_PRIMARY = "#00d4ff"
+    ACCENT_DANGER = "#ff0055"
+    ACCENT_SUCCESS = "#00ff88"
+    def get_gradient_text_style(*args, **kwargs): return {}
 
 # Get model metrics - will be loaded in callback to handle errors gracefully
 
@@ -30,9 +42,23 @@ layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
     
     # Header
     dbc.Row([
-        dbc.Col(html.H1("Model Performance Analysis", className="my-4", style={"font-weight": "700"}), width=12),
-        dbc.Col(html.P("Comprehensive evaluation of fraud detection models with focus on Recall (F2 Score)", 
-                      className="text-muted mb-4"), width=12)
+        dbc.Col([
+            html.H1(
+                "Model Performance Analysis", 
+                className="my-4", 
+                style={
+                    **get_gradient_text_style(),
+                    "font-weight": "700",
+                    "fontSize": "2.5rem",
+                    "letterSpacing": "-1px"
+                }
+            ),
+            html.P(
+                "Comprehensive evaluation of fraud detection models with focus on Recall (F2 Score)", 
+                className="text-muted mb-4",
+                style={"fontSize": "0.95rem", "opacity": "0.8"}
+            )
+        ], width=12)
     ]),
     
     # Model Comparison Cards
@@ -40,11 +66,21 @@ layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    html.H6("Best Model", className="text-muted"),
-                    html.H3(id="best-model-name", style={"color": "#00d4ff", "font-weight": "700"}),
-                    html.P(id="best-model-f2", className="text-success mt-2 mb-0")
+                    html.H6("Best Model", className="kpi-label"),
+                    html.H3(
+                        id="best-model-name", 
+                        style={
+                            "color": ACCENT_PRIMARY, 
+                            "font-weight": "700",
+                            "background": f"linear-gradient(135deg, {ACCENT_PRIMARY} 0%, {ACCENT_PRIMARY}dd 100%)",
+                            "-webkit-background-clip": "text",
+                            "-webkit-text-fill-color": "transparent",
+                            "background-clip": "text",
+                        }
+                    ),
+                    html.P(id="best-model-f2", className="text-success mt-2 mb-0", style={"opacity": "0.9"})
                 ])
-            ], style=DARK_CARD)
+            ], className="kpi-card", style=DARK_CARD)
         ], width=12, lg=3, className="mb-4"),
         
         dbc.Col([
@@ -82,20 +118,34 @@ layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
     dbc.Row([
         dbc.Col([
             dbc.Card([
-                dbc.CardHeader("Model Performance Comparison", className="text-info"),
+                dbc.CardHeader(
+                    [
+                        html.Span("📊 ", style={"marginRight": "0.5rem"}),
+                        "Model Performance Comparison"
+                    ],
+                    className="text-info",
+                    style={"fontWeight": "600", "letterSpacing": "0.3px"}
+                ),
                 dbc.CardBody([
                     dcc.Graph(id="metrics-comparison", config={'displayModeBar': False})
                 ])
-            ], style={"background": "#111", "border": "1px solid #333"})
+            ], className="card", style=PANEL_STYLE if 'PANEL_STYLE' in globals() else {"background": "#141414", "border": "1px solid #2a2a2a", "borderRadius": "12px", "boxShadow": "0 4px 12px rgba(0,0,0,0.4)"})
         ], width=12, lg=8, className="mb-4"),
         
         dbc.Col([
             dbc.Card([
-                dbc.CardHeader("Confusion Matrix (Best Model)", className="text-danger"),
+                dbc.CardHeader(
+                    [
+                        html.Span("🎯 ", style={"marginRight": "0.5rem"}),
+                        "Confusion Matrix (Best Model)"
+                    ],
+                    className="text-danger",
+                    style={"fontWeight": "600", "letterSpacing": "0.3px"}
+                ),
                 dbc.CardBody([
                     dcc.Graph(id="confusion-matrix", config={'displayModeBar': False})
                 ])
-            ], style={"background": "#111", "border": "1px solid #333"})
+            ], className="card", style=PANEL_STYLE if 'PANEL_STYLE' in globals() else {"background": "#141414", "border": "1px solid #2a2a2a", "borderRadius": "12px", "boxShadow": "0 4px 12px rgba(0,0,0,0.4)"})
         ], width=12, lg=4, className="mb-4"),
     ], className="g-4"),
     
@@ -103,20 +153,34 @@ layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
     dbc.Row([
         dbc.Col([
             dbc.Card([
-                dbc.CardHeader("ROC Curve", className="text-info"),
+                dbc.CardHeader(
+                    [
+                        html.Span("📈 ", style={"marginRight": "0.5rem"}),
+                        "ROC Curve"
+                    ],
+                    className="text-info",
+                    style={"fontWeight": "600", "letterSpacing": "0.3px"}
+                ),
                 dbc.CardBody([
                     dcc.Graph(id="roc-curve", config={'displayModeBar': False})
                 ])
-            ], style={"background": "#111", "border": "1px solid #333"})
+            ], className="card", style=PANEL_STYLE if 'PANEL_STYLE' in globals() else {"background": "#141414", "border": "1px solid #2a2a2a", "borderRadius": "12px", "boxShadow": "0 4px 12px rgba(0,0,0,0.4)"})
         ], width=12, lg=6, className="mb-4"),
         
         dbc.Col([
             dbc.Card([
-                dbc.CardHeader("Precision-Recall Curve", className="text-danger"),
+                dbc.CardHeader(
+                    [
+                        html.Span("📉 ", style={"marginRight": "0.5rem"}),
+                        "Precision-Recall Curve"
+                    ],
+                    className="text-danger",
+                    style={"fontWeight": "600", "letterSpacing": "0.3px"}
+                ),
                 dbc.CardBody([
                     dcc.Graph(id="pr-curve", config={'displayModeBar': False})
                 ])
-            ], style={"background": "#111", "border": "1px solid #333"})
+            ], className="card", style=PANEL_STYLE if 'PANEL_STYLE' in globals() else {"background": "#141414", "border": "1px solid #2a2a2a", "borderRadius": "12px", "boxShadow": "0 4px 12px rgba(0,0,0,0.4)"})
         ], width=12, lg=6, className="mb-4"),
     ], className="g-4"),
     
@@ -124,11 +188,18 @@ layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
     dbc.Row([
         dbc.Col([
             dbc.Card([
-                dbc.CardHeader("Detailed Metrics", className="text-info"),
+                dbc.CardHeader(
+                    [
+                        html.Span("📋 ", style={"marginRight": "0.5rem"}),
+                        "Detailed Metrics"
+                    ],
+                    className="text-info",
+                    style={"fontWeight": "600", "letterSpacing": "0.3px"}
+                ),
                 dbc.CardBody([
                     html.Div(id="metrics-table")
                 ])
-            ], style={"background": "#111", "border": "1px solid #333"})
+            ], className="card", style=PANEL_STYLE if 'PANEL_STYLE' in globals() else {"background": "#141414", "border": "1px solid #2a2a2a", "borderRadius": "12px", "boxShadow": "0 4px 12px rgba(0,0,0,0.4)"})
         ], width=12, className="mb-4"),
     ]),
 ])
