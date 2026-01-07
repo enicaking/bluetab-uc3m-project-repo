@@ -30,7 +30,7 @@ except ImportError:
     DARK_CARD = {"background": "#141414", "border": "1px solid #2a2a2a", "border-radius": "12px", "padding": "20px", "boxShadow": "0 4px 12px rgba(0,0,0,0.4)"}
     ACCENT_PRIMARY = "#00d4ff"
     ACCENT_DANGER = "#ff0055"
-    ACCENT_SUCCESS = "#00ff88"
+    ACCENT_SUCCESS = "#1e2220"
     def get_gradient_text_style(*args, **kwargs): return {}
 
 # Load model data for reference

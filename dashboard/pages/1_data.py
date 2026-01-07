@@ -76,7 +76,7 @@ layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
                             {'label': 'Same Proportion', 'value': 'df_exp_same_prop_2.csv'},
                         ],
                         value='df_exp_50_2.csv',
-                        style={"color": "#000"}
+                        style={"color": "#000", 'overflow': 'visible'}
                     )
                 ])
             ], style=DARK_CARD)
