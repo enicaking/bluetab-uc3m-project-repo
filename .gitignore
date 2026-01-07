@@ -41,7 +41,6 @@ build/
 *.sav
 *.h5
 *.hdf5
-*.json
 *.log
 
 # --- Project-specific folders ---

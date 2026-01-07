@@ -1,4 +1,2 @@
-"""
-Dashboard pages package
-"""
+# Dashboard pages package
 

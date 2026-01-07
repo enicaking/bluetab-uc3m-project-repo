@@ -40,12 +40,32 @@ body {
   border-radius: 6px;
   transition: all 0.2s ease;
   margin: 0 0.25rem;
+  position: relative;
 }
 
 .nav-link:hover {
   color: #00d4ff !important;
   background: rgba(0, 212, 255, 0.1);
   transform: translateY(-1px);
+}
+
+/* Active page styling */
+.nav-link-active {
+  color: #00d4ff !important;
+  background: rgba(0, 212, 255, 0.15) !important;
+  font-weight: 600 !important;
+  border-bottom: 2px solid #00d4ff;
+}
+
+.nav-link-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #00d4ff 0%, #0099cc 100%);
+  border-radius: 3px 0 0 3px;
 }
 
 /* ---------- Cards & Panels ---------- */
@@ -140,6 +160,8 @@ body {
   border-radius: 8px !important;
   color: #fff !important;
   transition: all 0.2s ease;
+  min-height: 42px !important;
+  height: auto !important;
 }
 
 .Select-control:hover {
@@ -157,30 +179,67 @@ body {
 .Select-input {
   color: #fff !important;
   font-weight: 500;
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+  padding: 0.5rem 0 !important;
+}
+
+.Select-input > input {
+  color: #fff !important;
+  font-size: 0.9rem !important;
 }
 
 .Select-menu-outer {
   background: linear-gradient(135deg, #1a1a1a 0%, #1f1f1f 100%) !important;
   border: 1px solid #2a2a2a !important;
   border-radius: 8px !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  max-height: 300px !important;
+  z-index: 99999 !important;
+  position: absolute !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
 
 .VirtualizedSelectOption {
   background-color: transparent !important;
   color: #fff !important;
-  padding: 0.75rem 1rem !important;
+  padding: 0.875rem 1.25rem !important;
   transition: all 0.2s ease;
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 .VirtualizedSelectOption:hover {
   background: rgba(0, 212, 255, 0.15) !important;
   color: #00d4ff !important;
+  font-weight: 500;
 }
 
 .VirtualizedSelectFocusedOption {
   background: rgba(0, 212, 255, 0.2) !important;
   color: #00d4ff !important;
+  font-weight: 500;
+}
+
+/* Select single value container */
+.Select-single-value {
+  color: #fff !important;
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+  padding: 0.5rem 0 !important;
+}
+
+/* Select arrow */
+.Select-arrow {
+  border-color: #888 transparent transparent !important;
+}
+
+.Select-control:hover .Select-arrow {
+  border-color: #00d4ff transparent transparent !important;
 }
 
 /* ---------- Form Controls ---------- */

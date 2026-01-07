@@ -145,3 +145,4 @@ def get_accent_color(metric_type="primary"):
     }
     return colors.get(metric_type, ACCENT_PRIMARY)
 
+

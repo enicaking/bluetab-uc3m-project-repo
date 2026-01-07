@@ -60,7 +60,7 @@ except ImportError:
 # -----------------------------
 # Load data once
 # -----------------------------
-df = load_data("df_exp_same_prop_2.csv")  # pick the dataset you want for the overview
+df = load_data("df_exp_same_prop_2.csv")  # TODO: escojer el dataset que queramos
 
 
 # -----------------------------
@@ -68,11 +68,15 @@ df = load_data("df_exp_same_prop_2.csv")  # pick the dataset you want for the ov
 # -----------------------------
 def filter_df_by_split(df_in: pd.DataFrame, split: str) -> pd.DataFrame:
     """
-    Filter the dataset by Train/Test/All, assuming the dataset covers ~2 unique calendar days.
-
-    - Train = earliest day in timestamps
-    - Test  = second day
-    - All   = everything
+    Filter the dataset by Train/Test/All, because the dataset covers ~2 unique calendar days.
+    
+    Note: Even though preprocessing.ipynb separates train/test before oversampling,
+    the final exported CSV (df_exp_*) contains all data concatenated with original timestamps.
+    This function allows users to filter by day in the dashboard UI.
+    
+    - Train = earliest day in timestamps (Day 1)
+    - Test  = second day (Day 2)
+    - All   = everything (both days)
     """
     if df_in is None or df_in.empty or "timestamp" not in df_in.columns:
         return df_in
@@ -116,7 +120,7 @@ def _base_layout(fig: go.Figure) -> go.Figure:
 
 def create_kpi_card(title: str, value_id: str, subtitle_id: str, color: str):
     """
-    Professional KPI card with gradient styling.
+    KPI card with gradient styling, just a card with a title, a value and a subtitle.
     """
     return dbc.Card(
         dbc.CardBody(
@@ -160,9 +164,10 @@ def create_kpi_card(title: str, value_id: str, subtitle_id: str, color: str):
         style={**KPI_CARD_STYLE, "height": "100%"},
     )
 
+# GRAPHS:
 
 def create_temporal_chart(temporal_data: pd.DataFrame) -> go.Figure:
-    """Total vs fraud volume over time (no hover)."""
+    """Total vs fraud volume over time."""
     if temporal_data is None or temporal_data.empty:
         return go.Figure()
 
@@ -190,7 +195,7 @@ def create_temporal_chart(temporal_data: pd.DataFrame) -> go.Figure:
     return _base_layout(fig)
 
 
-def create_fraud_rate_chart(temporal_data: pd.DataFrame, rolling_window: int = 5, show_raw: bool = True) -> go.Figure:
+def create_fraud_rate_chart(temporal_data: pd.DataFrame, rolling_window: int = 3, show_raw: bool = True) -> go.Figure:
     """
     Fraud rate trend:
     - main line = rolling mean (smooth)
@@ -219,8 +224,7 @@ def create_fraud_rate_chart(temporal_data: pd.DataFrame, rolling_window: int = 5
                 x=td["timestamp"],
                 y=td["fraud_rate"],
                 name="Raw",
-                line=dict(color=ACCENT_PINK, width=1),
-                opacity=0.25,
+                line=dict(color=ACCENT_TEAL, width=1),
             )
         )
 
@@ -348,6 +352,21 @@ def create_country_chart(country_stats: pd.DataFrame, rank_by: str = "rate") -> 
 
     fig = go.Figure()
     
+    # Prepare hover text with detailed information
+    hover_texts = []
+    for idx, row in cs.iterrows():
+        hover_parts = [f"<b>{row['country']}</b>"]
+        if rank_by == "rate":
+            hover_parts.append(f"Fraud Rate: {row[y_col]:.2f}%")
+            hover_parts.append(f"Raw Rate: {row.get('fraud_rate_pct', 0):.2f}%")
+        else:
+            hover_parts.append(f"Fraud Amount: ${row[y_col]:,.0f}")
+        hover_parts.append(f"Total Transactions: {int(row['total']):,}")
+        hover_parts.append(f"Fraud Count: {int(row['fraud_count']):,}")
+        if 'total_amount' in row and pd.notna(row['total_amount']):
+            hover_parts.append(f"Total Amount: ${row['total_amount']:,.0f}")
+        hover_texts.append("<br>".join(hover_parts))
+    
     fig.add_trace(go.Bar(
         x=cs["country"],
         y=cs[y_col],
@@ -357,6 +376,8 @@ def create_country_chart(country_stats: pd.DataFrame, rank_by: str = "rate") -> 
         ),
         text=[f"{val:.1f}%" if rank_by == "rate" else f"${val:,.0f}" for val in cs[y_col]],
         textposition="outside",
+        hovertemplate="%{hovertext}<extra></extra>",
+        hovertext=hover_texts,
     ))
 
     fig.update_xaxes(title_text="Country", tickangle=-25)
@@ -365,7 +386,20 @@ def create_country_chart(country_stats: pd.DataFrame, rank_by: str = "rate") -> 
     if rank_by == "rate":
         fig.update_yaxes(ticksuffix="%")
 
-    return _base_layout(fig)
+    # Apply base layout but override hovermode for this chart
+    fig = _base_layout(fig)
+    fig.update_layout(
+        hovermode="closest",
+        hoverlabel=dict(
+            bgcolor="rgba(20, 20, 20, 0.95)",
+            bordercolor="#00d4ff",
+            font_size=12,
+            font_family="Inter",
+            font_color="white",
+        )
+    )
+    
+    return fig
 
 
 # -----------------------------
@@ -631,7 +665,7 @@ def update_overview(split, rank_by, min_tx):
     temporal = get_temporal_data(dff, freq="H")
 
     # Smoothing window for hourly data
-    rolling_window = 5
+    rolling_window = 3
 
     fig_vol = create_temporal_chart(temporal)
     fig_rate = create_fraud_rate_chart(temporal, rolling_window=rolling_window, show_raw=False)

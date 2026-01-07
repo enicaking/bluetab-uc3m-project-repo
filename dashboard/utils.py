@@ -37,24 +37,39 @@ def get_summary_stats(df):
     }
     return stats
 
-def get_temporal_data(df, freq='H'):
+def get_temporal_data(df, freq="H"):
     """Get temporal aggregation of transactions"""
-    if df is None or 'timestamp' not in df.columns:
+    if df is None or df.empty or "timestamp" not in df.columns:
         return None
-    # Analysis by hour
-    df_temp = df.copy()
-    df_temp['hour'] = df_temp['timestamp'].dt.floor(freq)
-    # Group by hour and calculate the statistics
-    temporal = df_temp.groupby('hour').agg({
-        'Class': ['count', 'sum', 'mean'],      # count: number of transactions, sum: number of fraudulent transactions, mean:percentage of fraudulent transactions (0-1)
-        'Amount': ['sum', 'mean']               # sum: total amount of transactions, mean: average amount of transactions
-    }).reset_index()
-    
-    temporal.columns = ['timestamp', 'count', 'fraud_count', 'fraud_rate', 'total_amount', 'avg_amount']
-    temporal['fraud_rate'] = temporal['fraud_rate'] * 100
-    return temporal
 
-def get_country_stats(df, min_tx=100, m=500):
+    dff = df.copy()
+    dff = dff.loc[dff["timestamp"].notna()].copy()
+    if dff.empty:
+        return None
+
+    dff["time_bin"] = dff["timestamp"].dt.floor(freq)
+
+    agg_dict = {
+        "Class": ["count", "sum", "mean"],  # count: n_tx, sum: n_fraud, mean: fraud rate (0-1)
+    }
+    has_amount = "Amount" in dff.columns
+    if has_amount:
+        agg_dict["Amount"] = ["sum", "mean"]
+
+    temporal = dff.groupby("time_bin").agg(agg_dict).reset_index()
+
+    if has_amount:
+        temporal.columns = ["timestamp", "count", "fraud_count", "fraud_rate", "total_amount", "avg_amount"]
+    else:
+        temporal.columns = ["timestamp", "count", "fraud_count", "fraud_rate"]
+        temporal["total_amount"] = np.nan
+        temporal["avg_amount"] = np.nan
+
+    temporal["fraud_rate"] = temporal["fraud_rate"] * 100  # %
+    return temporal.sort_values("timestamp")
+
+
+def get_country_stats(df, min_tx=100, m=500, top_n=None, sort_by="fraud_rate_smoothed_pct"):
     """
     Country stats for dashboard.
 
@@ -63,40 +78,36 @@ def get_country_stats(df, min_tx=100, m=500):
       - fraud_count
       - fraud_rate_pct (raw)
       - fraud_rate_smoothed_pct (Bayesian smoothing)
-      - total_amount (sum Amount for all tx)
-      - fraud_amount (sum Amount for fraud tx only)  <-- needed for "impact" ranking
+      - total_amount
+      - fraud_amount
 
     Args:
-        min_tx: minimum number of transactions to appear in the ranking
+        min_tx: minimum number of transactions to appear
         m: smoothing strength (higher => more pull towards global mean)
+        top_n: keep only top N rows after sorting (optional)
+        sort_by: one of ["fraud_rate_smoothed_pct","fraud_amount","fraud_count","total"]
     """
     if df is None or df.empty:
         return None
     if "customer_country" not in df.columns or "Class" not in df.columns:
         return None
 
-    has_amount = "Amount" in df.columns
-
     dff = df.copy()
+    dff["customer_country"] = dff["customer_country"].fillna("Unknown")
 
-    # Base aggregation
-    agg_dict = {
-        "Class": ["count", "sum"],
-    }
+    has_amount = "Amount" in dff.columns
+
+    agg_dict = {"Class": ["count", "sum"]}
     if has_amount:
-        agg_dict["Amount"] = "sum"
+        agg_dict["Amount"] = ["sum"]
 
-    cs = (
-        dff.groupby("customer_country")
-        .agg(agg_dict)
-        .reset_index()
-    )
+    cs = dff.groupby("customer_country").agg(agg_dict).reset_index()
 
-    # Flatten columns
     if has_amount:
         cs.columns = ["country", "total", "fraud_count", "total_amount"]
     else:
         cs.columns = ["country", "total", "fraud_count"]
+        cs["total_amount"] = np.nan
 
     # Fraud amount (real impact): sum Amount where Class==1 by country
     if has_amount:
@@ -111,125 +122,90 @@ def get_country_stats(df, min_tx=100, m=500):
         cs = cs.merge(fraud_amount, on="country", how="left")
         cs["fraud_amount"] = cs["fraud_amount"].fillna(0.0)
     else:
-        cs["total_amount"] = cs["total"]
-        cs["fraud_amount"] = cs["fraud_count"]
+        cs["fraud_amount"] = np.nan
 
-    # Global rate (0-1)
-    global_rate = float(dff["Class"].mean())
-
-    # Raw rate (0-1)
+    global_rate = float(dff["Class"].mean())  # 0-1
     cs["fraud_rate"] = cs["fraud_count"] / cs["total"]
+    prior_strength = m  
+    cs["fraud_rate_smoothed"] = (cs["fraud_count"] + prior_strength * global_rate) / (cs["total"] + prior_strength)
 
-    # Smoothed rate (0-1)
-    cs["fraud_rate_smoothed"] = (cs["fraud_count"] + m * global_rate) / (cs["total"] + m)
-
-    # Percent versions
     cs["fraud_rate_pct"] = cs["fraud_rate"] * 100
     cs["fraud_rate_smoothed_pct"] = cs["fraud_rate_smoothed"] * 100
 
-    # Filter by volume
     cs = cs.loc[cs["total"] >= min_tx].copy()
 
-    # Default sort: smoothed fraud rate
-    return cs.sort_values("fraud_rate_smoothed_pct", ascending=False)
+    if sort_by not in cs.columns:
+        sort_by = "fraud_rate_smoothed_pct"
+
+    cs = cs.sort_values(sort_by, ascending=False)
+
+    if top_n is not None:
+        cs = cs.head(int(top_n))
+
+    return cs
 
 
 def get_model_metrics(dataset_key=None):
     """
     Get model performance metrics from saved JSON results.
-    
-    Args:
-        dataset_key: Optional dataset key (e.g., 'df_exp_same_prop_2'). 
-                    If None, uses the best model dataset.
-    
-    Returns:
-        dict with model metrics for all models in the specified dataset
+
+    Returns dict with aligned arrays per metric. Missing metrics = None.
     """
     import json
     
-    # Path to model results JSON
     json_path = Path(__file__).parent / "data" / "model_results.json"
     
+    def _empty():
+        return {
+            "models": [],
+            "f1_scores": [],
+            "f2_scores": [],
+            "precision": [],
+            "recall": [],
+            "auc_pr": [],
+            "roc_auc": [],
+        }
+    
     try:
-        with open(json_path, 'r', encoding='utf-8') as f:
+        with open(json_path, "r", encoding="utf-8") as f:
             results_data = json.load(f)
-    except FileNotFoundError:
-        print(f"Warning: Model results file not found at {json_path}. Using fallback data.")
-        return {
-            'models': ['LightGBM', 'XGBoost', 'CatBoost', 'Random Forest'],
-            'f1_scores': [0.89, 0.91, 0.88, 0.85],
-            'f2_scores': [0.92, 0.94, 0.90, 0.87],
-            'precision': [0.87, 0.89, 0.86, 0.83],
-            'recall': [0.91, 0.93, 0.89, 0.87],
-            'auc_pr': [0.95, 0.97, 0.94, 0.92],
-            'roc_auc': [0.98, 0.99, 0.97, 0.95],
-        }
     except Exception as e:
-        print(f"Error loading model results: {e}. Using fallback data.")
-        return {
-            'models': ['LightGBM', 'XGBoost', 'CatBoost', 'Random Forest'],
-            'f1_scores': [0.89, 0.91, 0.88, 0.85],
-            'f2_scores': [0.92, 0.94, 0.90, 0.87],
-            'precision': [0.87, 0.89, 0.86, 0.83],
-            'recall': [0.91, 0.93, 0.89, 0.87],
-            'auc_pr': [0.95, 0.97, 0.94, 0.92],
-            'roc_auc': [0.98, 0.99, 0.97, 0.95],
-        }
+        print(f"Warning: could not load model results at {json_path}: {e}")
+        return _empty()
     
-    # Use specified dataset or default to best model's dataset
     if dataset_key is None:
-        dataset_key = results_data.get('best_model', {}).get('dataset', 'df_exp_same_prop_2')
+        dataset_key = results_data.get("best_model", {}).get("dataset")
     
-    # Get dataset info
-    dataset_info = results_data.get('datasets', {}).get(dataset_key, {})
-    
+    dataset_info = results_data.get("datasets", {}).get(dataset_key, {})
     if not dataset_info:
-        # Fallback to best model if dataset not found
-        best_model = results_data.get('best_model', {})
-        return {
-            'models': [best_model.get('model', 'RandomForest')],
-            'f1_scores': [best_model.get('f1_score', 0.85)],
-            'f2_scores': [best_model.get('f2_score', 0)],
-            'precision': [best_model.get('precision', 0)],
-            'recall': [best_model.get('recall', 0)],
-            'auc_pr': [best_model.get('auc_pr', 0)],
-            'roc_auc': [best_model.get('roc_auc', 0)],
-        }
+        return _empty()
     
-    # Extract metrics for all models in the dataset
-    models = []
-    f1_scores = []  # TODO: no hay f1 score en el notebook. quitarlo
-    f2_scores = []
-    precision_scores = []
-    recall_scores = []
-    auc_pr_scores = []
-    roc_auc_scores = []
+    models_dict = dataset_info.get("models", {})
+    model_order = ["LightGBM", "XGBoost", "CatBoost", "RandomForest"]
     
-    models_dict = dataset_info.get('models', {})
-    
-    # Order: LightGBM, XGBoost, CatBoost, RandomForest (to match original order)
-    model_order = ['LightGBM', 'XGBoost', 'CatBoost', 'RandomForest']
+    out = {
+        "models": [],
+        "f1_scores": [],
+        "f2_scores": [],
+        "precision": [],
+        "recall": [],
+        "auc_pr": [],
+        "roc_auc": [],
+    }
     
     for model_name in model_order:
-        if model_name in models_dict:
-            model_metrics = models_dict[model_name]
-            models.append(model_name if model_name != 'RandomForest' else 'Random Forest')
-            f1_scores.append(model_metrics.get('f1_score', 0.0))
-            f2_scores.append(model_metrics.get('f2_score', 0.0))
-            precision_scores.append(model_metrics.get('precision', 0.0))
-            recall_scores.append(model_metrics.get('recall', 0.0))
-            auc_pr_scores.append(model_metrics.get('auc_pr', 0.0))
-            roc_auc_scores.append(model_metrics.get('roc_auc', 0.0))
+        if model_name not in models_dict:
+            continue
+        mm = models_dict[model_name]
+        out["models"].append(model_name if model_name != "RandomForest" else "Random Forest")
+        out["f1_scores"].append(mm.get("f1_score"))   # None if absent
+        out["f2_scores"].append(mm.get("f2_score"))
+        out["precision"].append(mm.get("precision"))
+        out["recall"].append(mm.get("recall"))
+        out["auc_pr"].append(mm.get("auc_pr"))
+        out["roc_auc"].append(mm.get("roc_auc"))
     
-    return {
-        'models': models,
-        'f1_scores': f1_scores,
-        'f2_scores': f2_scores,
-        'precision': precision_scores,
-        'recall': recall_scores,
-        'auc_pr': auc_pr_scores,
-        'roc_auc': roc_auc_scores,
-    }
+    return out
 
 def calculate_roi_metrics(
     df,
@@ -248,9 +224,12 @@ def calculate_roi_metrics(
 
     models = model_metrics.get("models", [])
     if model_name not in models:
-        model_name = models[0] if models else None
-        if model_name is None:
+        if not models:
             return {}
+        model_name = models[0]
+
+    if model_name is None:
+        return {}
 
     idx = models.index(model_name)
     precision = max(float(model_metrics["precision"][idx]), 1e-9)
