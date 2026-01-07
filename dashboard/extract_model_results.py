@@ -10,19 +10,20 @@ from pathlib import Path
 # El usuario mencionó que finalmente seleccionaron Random Forest con same proportions
 
 # Estructura de resultados esperada
+# NOTE: No se hizo XGBoost, y el CatBoost solo para el 'mejor' modelo. Hay que cambiar este json y volver a generar resultados.
 results_data = {
     "datasets": {
-        "df_exp_50_2": { # TODO: inventadas por chat, hay que volver a ejecutar el notebook con los ultimos df y copiar resultados
+        "df_exp_50_2": { 
             "name": "Balanced 50/50",
             "models": {
                 "LightGBM": {
-                    "f1_score": 0.89,
-                    "f2_score": 0.92,
-                    "precision": 0.87,
-                    "recall": 0.91,
-                    "auc_pr": 0.95,
-                    "roc_auc": 0.98,
-                    "best_threshold": 0.0423
+                    "f1_score": 0.6520, # NOTE: F1 calculados sobre el threshold 0.5, no el óptimo 
+                    "f2_score": 0.7115,
+                    "precision": 0.6545,
+                    "recall": 0.7727,
+                    "auc_pr": 0.6442,
+                    "roc_auc": 0.9486,
+                    "best_threshold": 0.7796
                 },
                 "XGBoost": {
                     "f1_score": 0.88,
@@ -34,13 +35,13 @@ results_data = {
                     "best_threshold": 0.0450
                 },
                 "RandomForest": {
-                    "f1_score": 0.85,
-                    "f2_score": 0.87,
-                    "precision": 0.83,
-                    "recall": 0.87,
-                    "auc_pr": 0.92,
-                    "roc_auc": 0.95,
-                    "best_threshold": 0.0500
+                    "f1_score": 0.00, # NOTE: Not calculated for RF
+                    "f2_score": 0.7451,
+                    "precision": 0.6667,
+                    "recall": 0.7677,
+                    "auc_pr": 0.6963, # NOTE: Calculated differently (RF at 0.5)
+                    "roc_auc": 0.9545,
+                    "best_threshold": 0.2822
                 },
                 "CatBoost": {
                     "f1_score": 0.84,
@@ -57,13 +58,13 @@ results_data = {
             "name": "Balanced 63/37",
             "models": {
                 "LightGBM": {
-                    "f1_score": 0.88,
-                    "f2_score": 0.91,
-                    "precision": 0.86,
-                    "recall": 0.90,
-                    "auc_pr": 0.94,
-                    "roc_auc": 0.97,
-                    "best_threshold": 0.0430
+                    "f1_score": 0.5159,
+                    "f2_score": 0.6539,
+                    "precision": 0.5911,
+                    "recall": 0.6717,
+                    "auc_pr": 0.5626,
+                    "roc_auc": 0.9290,
+                    "best_threshold": 0.8704
                 },
                 "XGBoost": {
                     "f1_score": 0.87,
@@ -75,13 +76,13 @@ results_data = {
                     "best_threshold": 0.0460
                 },
                 "RandomForest": {
-                    "f1_score": 0.84,
-                    "f2_score": 0.86,
-                    "precision": 0.82,
-                    "recall": 0.85,
-                    "auc_pr": 0.91,
-                    "roc_auc": 0.94,
-                    "best_threshold": 0.0520
+                    "f1_score": 0.84, # NOTE: Número random
+                    "f2_score": 0.6832,
+                    "precision": 0.6888,
+                    "recall": 0.6818,
+                    "auc_pr": 0.6003,
+                    "roc_auc": 0.9494,
+                    "best_threshold": 0.4253
                 },
                 "CatBoost": {
                     "f1_score": 0.83,
@@ -98,31 +99,31 @@ results_data = {
             "name": "Random Oversample",
             "models": {
                 "LightGBM": {
-                    "f1_score": 0.87,
-                    "f2_score": 0.90,
-                    "precision": 0.85,
-                    "recall": 0.89,
-                    "auc_pr": 0.93,
-                    "roc_auc": 0.96,
-                    "best_threshold": 0.0440
+                    "f1_score": 0.6714,
+                    "f2_score": 0.7183,
+                    "precision": 0.5604,
+                    "recall": 0.7727,
+                    "auc_pr": 0.6232,
+                    "roc_auc": 0.9476,
+                    "best_threshold": 0.0579
                 },
                 "XGBoost": {
-                    "f1_score": 0.86,
-                    "f2_score": 0.88,
-                    "precision": 0.84,
-                    "recall": 0.87,
-                    "auc_pr": 0.92,
-                    "roc_auc": 0.95,
-                    "best_threshold": 0.0470
+                    "f1_score": 0.6714,
+                    "f2_score": 0.7183,
+                    "precision": 0.5604,
+                    "recall": 0.7727,
+                    "auc_pr": 0.6232,
+                    "roc_auc": 0.9476,
+                    "best_threshold": 0.0579
                 },
                 "RandomForest": {
-                    "f1_score": 0.83,
-                    "f2_score": 0.85,
-                    "precision": 0.81,
-                    "recall": 0.84,
-                    "auc_pr": 0.90,
-                    "roc_auc": 0.93,
-                    "best_threshold": 0.0530
+                    "f1_score": 0.83, # NOTE: Número random
+                    "f2_score": 0.7415,
+                    "precision": 0.7184,
+                    "recall": 0.7475,
+                    "auc_pr": 0.7014,
+                    "roc_auc": 0.9528,
+                    "best_threshold": 0.3049
                 },
                 "CatBoost": {
                     "f1_score": 0.82,
@@ -139,13 +140,13 @@ results_data = {
             "name": "Same Proportion",
             "models": {
                 "LightGBM": {
-                    "f1_score": 0.82,
-                    "f2_score": 0.82,
-                    "precision": 0.83,
-                    "recall": 0.82,
-                    "auc_pr": 0.85,
-                    "roc_auc": 0.98,
-                    "best_threshold": 0.0423,
+                    "f1_score": 0.6432,
+                    "f2_score": 0.6885,
+                    "precision": 0.5556,
+                    "recall": 0.7323,
+                    "auc_pr": 0.5769,
+                    "roc_auc": 0.9387,
+                    "best_threshold": 0.0931,
                     "note": "From Cell 28 output"
                 },
                 "XGBoost": {
@@ -157,14 +158,14 @@ results_data = {
                     "roc_auc": 0.97,
                     "best_threshold": 0.0450
                 },
-                "RandomForest": {
-                    "f1_score": 0.85,
-                    "f2_score": 0.88,
-                    "precision": 0.87,
-                    "recall": 0.89,
-                    "auc_pr": 0.92,
-                    "roc_auc": 0.96,
-                    "best_threshold": 0.0550,
+                "RandomForest": { 
+                    "f1_score": 0.85, # NOTE: Número random
+                    "f2_score": 0.6737,
+                    "precision": 0.6941,
+                    "recall": 0.7677,
+                    "auc_pr": 0.6959,
+                    "roc_auc": 0.9544,
+                    "best_threshold": 0.2494,
                     "note": "SELECTED MODEL - Best performance on same_prop dataset"
                 },
                 "CatBoost": {
@@ -191,8 +192,8 @@ results_data = {
         "best_threshold": 0.3434
     },
     "metadata": {
-        "extraction_date": "2025-01-27",
-        "source": "modeling3.ipynb",
+        "extraction_date": "2026-01-07",
+        "source": "modelos.ipynb",
         "note": "Random Forest with same_prop dataset was selected as final model"
     }
 }
