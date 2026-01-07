@@ -15,15 +15,13 @@ import numpy as np
 import sys
 from pathlib import Path
 
-# Allow importing utils.py from dashboard/../
+# Allow importing utils.py from dashboard
 sys.path.append(str(Path(__file__).parent.parent))
-from utils import load_data, get_country_stats
+from utils import load_data, get_country_stats, get_temporal_data
 
 dash.register_page(__name__, path="/data", name="Data Exploration", order=1)
 
-# -----------------------------
-# Design system (consistent)
-# -----------------------------
+# Design system 
 try:
     from design_system import (
         DARK_STYLE, PANEL_STYLE, KPI_CARD_STYLE,
@@ -46,7 +44,7 @@ except ImportError:
 
 DATASET_OPTIONS = [
     {"label": "Balanced 50/50", "value": "df_exp_50_2.csv"},
-    {"label": "Balanced 63/37", "value": "df_exp_63_2.csv"},
+    {"label": "Balanced 66/33", "value": "df_exp_63_2.csv"},
     {"label": "Random Oversample", "value": "df_exp_random_2.csv"},
     {"label": "Same Proportion", "value": "df_exp_same_prop_2.csv"},
 ]
@@ -132,7 +130,7 @@ def create_kpi_card(title: str, value_id: str, color: str):
             style={"position": "relative", "padding": "1.5rem"}
         ),
         className="kpi-card",
-        style={**KPI_CARD_STYLE, "height": "100%"},
+        style={**KPI_CARD_STYLE, "height": "100%", "zIndex": 1, "position": "relative"},
     )
 
 def compute_feature_count(df: pd.DataFrame) -> int:
@@ -144,12 +142,6 @@ def compute_feature_count(df: pd.DataFrame) -> int:
     cols = [c for c in df.columns if c not in exclude]
     return len(cols)
 
-def hour_from_cyclical(df: pd.DataFrame) -> pd.Series:
-    """Convert cyclical hour encoding (sin/cos) back to hour [0,24)."""
-    # Standard conversion: hour = degrees(arctan2(sin, cos)) / 15  in [0,24)
-    angle = np.degrees(np.arctan2(df["hour_sin"], df["hour_cos"]))
-    hour = (angle / 15.0) % 24
-    return pd.Series(hour, index=df.index)
 
 # -----------------------------
 # Layout
@@ -209,18 +201,19 @@ layout = dbc.Container(
                                         value=DEFAULT_DATASET,
                                         clearable=False,
                                     ),
-                                    style={"position": "relative", "zIndex": 1000}
+                                    style={"position": "relative", "zIndex": 10000}
                                 ),
                             ]
                         ),
-                        style=PANEL_STYLE,
+                        style={**PANEL_STYLE, "position": "relative", "zIndex": 10000},
                         className="card",
                     ),
                     width=12,
                     lg=4,
                     className="mb-4",
                 )
-            ]
+            ],
+            justify="center",
         ),
 
         # KPI row
@@ -229,7 +222,7 @@ layout = dbc.Container(
                 dbc.Col(create_kpi_card("Total Transactions", "stat-total", ACCENT_TEAL), width=12, lg=3, className="mb-4"),
                 dbc.Col(create_kpi_card("Fraud Rate", "stat-fraud-rate", ACCENT_PINK), width=12, lg=3, className="mb-4"),
                 dbc.Col(create_kpi_card("Avg Transaction Amount", "stat-avg-amount", ACCENT_TEAL), width=12, lg=3, className="mb-4"),
-                dbc.Col(create_kpi_card("Features", "stat-features", ACCENT_TEAL), width=12, lg=3, className="mb-4"),
+                dbc.Col(create_kpi_card("Features", "stat-features", ACCENT_PINK), width=12, lg=3, className="mb-4"),
             ],
             className="g-4",
         ),
@@ -337,7 +330,7 @@ layout = dbc.Container(
                             dbc.CardHeader(
                                 [
                                     html.Span("🔗 ", style={"marginRight": "0.5rem"}),
-                                    "PCA Features Correlation (Top 10 available)"
+                                    "PCA Features Correlation Matrix"
                                 ],
                                 className="text-info",
                                 style={"fontWeight": "600", "letterSpacing": "0.3px"}
@@ -348,9 +341,31 @@ layout = dbc.Container(
                         className="card",
                     ),
                     width=12,
+                    lg=6,
                     className="mb-4",
-                )
-            ]
+                ),
+                dbc.Col(
+                    dbc.Card(
+                        [
+                            dbc.CardHeader(
+                                [
+                                    html.Span("🎯 ", style={"marginRight": "0.5rem"}),
+                                    "PCA Features Correlation with Class"
+                                ],
+                                className="text-danger",
+                                style={"fontWeight": "600", "letterSpacing": "0.3px"}
+                            ),
+                            dbc.CardBody([dcc.Graph(id="pca-target-correlation", config={"displayModeBar": False})]),
+                        ],
+                        style=PANEL_STYLE,
+                        className="card",
+                    ),
+                    width=12,
+                    lg=6,
+                    className="mb-4",
+                ),
+            ],
+            className="g-4",
         ),
     ],
 )
@@ -368,6 +383,7 @@ layout = dbc.Container(
     Output("amount-distribution", "figure"),
     Output("time-analysis", "figure"),
     Output("pca-correlation", "figure"),
+    Output("pca-target-correlation", "figure"),
     Input("dataset-selector", "value"),
 )
 def update_data_exploration(dataset_name: str):
@@ -375,7 +391,7 @@ def update_data_exploration(dataset_name: str):
     dff = load_data(dataset_name)
     if dff is None or dff.empty:
         ef = _empty_fig()
-        return "0", "0.00%", "$0.00", "0", ef, ef, ef, ef, ef
+        return "0", "0.00%", "$0.00", "0", ef, ef, ef, ef, ef, ef
 
     # ---- KPIs
     total = _fmt_int(len(dff))
@@ -385,7 +401,7 @@ def update_data_exploration(dataset_name: str):
     avg_amount = _fmt_money(avg_amount_val)
     n_features = str(compute_feature_count(dff))
 
-    # ---- Class distribution (robust labels - fix order issue)
+    # ---- Class distribution
     fig_class = _empty_fig("Class column not found")
     if "Class" in dff.columns:
         counts = dff["Class"].value_counts().to_dict()
@@ -405,7 +421,7 @@ def update_data_exploration(dataset_name: str):
         )
         fig_class = _base_layout(fig_class)
 
-    # ---- Geographic map (use smoothed % + clean hover)
+    # ---- Geographic map (use smoothed % + hover)
     fig_geo = _empty_fig("Country stats not available")
     cs = get_country_stats(dff, min_tx=100, m=500)
     if cs is not None and not cs.empty and "country" in cs.columns:
@@ -447,7 +463,7 @@ def update_data_exploration(dataset_name: str):
         )
         fig_geo = _base_layout(fig_geo)
 
-    # ---- Amount distribution (histogram instead of boxplot - better for imbalanced data)
+    # ---- Amount distribution (histogram)
     fig_amount = _empty_fig("Amount/Class not available")
     if "Amount" in dff.columns and "Class" in dff.columns:
         legit_amt = dff.loc[dff["Class"] == 0, "Amount"]
@@ -489,69 +505,128 @@ def update_data_exploration(dataset_name: str):
         )
         fig_amount = _base_layout(fig_amount)
 
-    # ---- Time of day (fraud rate % by hour) with hover
-    fig_time = _empty_fig("hour_sin/hour_cos not available")
-    if {"hour_sin", "hour_cos", "Class"}.issubset(set(dff.columns)):
-        tmp = dff[["hour_sin", "hour_cos", "Class"]].dropna().copy()
-        if len(tmp) > 0 and isinstance(tmp, pd.DataFrame):
-            tmp["hour"] = hour_from_cyclical(tmp)
-            tmp["hour_bin"] = tmp["hour"].round().astype(int) % 24
+    # ---- Time of day (fraud rate % by hour) using timestamps
+    fig_time = _empty_fig("Timestamp not available")
+    if "timestamp" in dff.columns and "Class" in dff.columns:
+        tmp = dff[["timestamp", "Class"]].copy()
+        tmp = tmp.loc[tmp["timestamp"].notna()].copy()
+        
+        if len(tmp) > 0:
+            # Convert timestamp to datetime if needed
+            if not pd.api.types.is_datetime64_any_dtype(tmp["timestamp"]):
+                tmp["timestamp"] = pd.to_datetime(tmp["timestamp"], errors="coerce")
+            
+            tmp = tmp.loc[tmp["timestamp"].notna()].copy()
+            
+            if len(tmp) > 0:
+                # Extract hour from timestamp
+                tmp["hour"] = tmp["timestamp"].dt.hour
+                
+                # Group by hour and calculate fraud rate
+                hourly = tmp.groupby("hour")["Class"].agg(["mean", "count"]).reset_index()
+                hourly.columns = ["hour", "fraud_rate", "count"]
+                hourly["fraud_rate"] = hourly["fraud_rate"].astype(float) * 100
+                
+                # Ensure all 24 hours are present (fill missing with 0)
+                hourly = hourly.set_index("hour").reindex(range(24), fill_value=0.0).reset_index()
+                hourly["fraud_rate"] = hourly["fraud_rate"].fillna(0.0)
+                hourly["count"] = hourly["count"].fillna(0.0)
+                
+                fig_time = go.Figure()
+                fig_time.add_trace(
+                    go.Scatter(
+                        x=hourly["hour"],
+                        y=hourly["fraud_rate"],
+                        mode="lines+markers",
+                        line=dict(color=ACCENT_PINK, width=3),
+                        marker=dict(size=8, color=ACCENT_PINK),
+                        fill="tozeroy",
+                        fillcolor="rgba(255, 0, 85, 0.15)",
+                        hovertemplate=(
+                            "<b>Hour: %{x}:00</b><br>"
+                            "Fraud Rate: %{y:.2f}%<br>"
+                            "Transaction Count: %{customdata:,}<extra></extra>"
+                        ),
+                        customdata=hourly["count"].values,
+                        name="Fraud rate",
+                    )
+                )
+                fig_time.update_xaxes(title_text="Hour of Day", dtick=2, range=[-0.5, 23.5])
+                fig_time.update_yaxes(title_text="Fraud Rate (%)", rangemode="tozero")
+                fig_time = _base_layout(fig_time)
+                fig_time.update_layout(
+                    hoverlabel=dict(
+                        bgcolor="rgba(20, 20, 20, 0.95)",
+                        bordercolor=ACCENT_PINK,
+                        font_size=12,
+                        font_family="Inter",
+                        font_color="white",
+                    )
+                )
 
-        hourly = tmp.groupby("hour_bin")["Class"].agg(["mean", "count"]).reset_index()
-        hourly.columns = ["hour", "fraud_rate", "count"]
-        hourly["fraud_rate"] = hourly["fraud_rate"].astype(float) * 100
-        hourly = hourly.set_index("hour").reindex(range(24), fill_value=0.0).reset_index()
-        hourly["fraud_rate"] = hourly["fraud_rate"].fillna(0.0)
-        hourly["count"] = hourly["count"].fillna(0.0)
-
-        fig_time = go.Figure()
-        fig_time.add_trace(
-            go.Scatter(
-                x=hourly.index,
-                y=hourly["fraud_rate"],
-                mode="lines+markers",
-                line=dict(color=ACCENT_PINK, width=3),
-                marker=dict(size=8, color=ACCENT_PINK),
-                fill="tozeroy",
-                fillcolor="rgba(255, 0, 85, 0.15)",
-                hovertemplate=(
-                    "<b>Hour: %{x}:00</b><br>"
-                    "Fraud Rate: %{y:.2f}%<br>"
-                    "Transaction Count: %{customdata:,}<extra></extra>"
-                ),
-                customdata=hourly["count"].values,
-                name="Fraud rate",
-            )
-        )
-        fig_time.update_xaxes(title_text="Hour of Day", dtick=2, range=[-0.5, 23.5])
-        fig_time.update_yaxes(title_text="Fraud Rate (%)", rangemode="tozero")
-        fig_time = _base_layout(fig_time)
-        fig_time.update_layout(
-            hoverlabel=dict(
-                bgcolor="rgba(20, 20, 20, 0.95)",
-                bordercolor=ACCENT_PINK,
-                font_size=12,
-                font_family="Inter",
-                font_color="white",
-            )
-        )
-
-    # ---- PCA correlation (top 10 available V-columns)
+    # ---- PCA correlation matrix (all available V-columns)
     fig_corr = _empty_fig("No PCA columns V1..V28 found")
     pca_cols = [f"V{i}" for i in range(1, 29) if f"V{i}" in dff.columns]
     if len(pca_cols) >= 2:
-        top_cols = pca_cols[:10]
-        corr = dff[top_cols].corr()
-        fig_corr = px.imshow(
-            corr,
-            color_continuous_scale="RdBu",
-            zmin=-1, zmax=1,
-            aspect="auto",
-        )
-        fig_corr.update_traces(
-            hovertemplate="<b>%{x}</b> vs <b>%{y}</b><br>Correlation: %{z:.2f}<extra></extra>"
-        )
-        fig_corr.update_layout(coloraxis_colorbar=dict(title="Correlation"))
-        fig_corr = _base_layout(fig_corr)
+        # Use all available PCA columns, not just top 10
+        pca_data = dff[pca_cols].dropna()
+        if len(pca_data) > 0:
+            corr = pca_data.corr()
+            fig_corr = px.imshow(
+                corr,
+                color_continuous_scale="RdBu",
+                zmin=-1, zmax=1,
+                aspect="auto",
+                labels=dict(color="Correlation"),
+            )
+            fig_corr.update_traces(
+                hovertemplate="<b>%{x}</b> vs <b>%{y}</b><br>Correlation: %{z:.3f}<extra></extra>"
+            )
+            fig_corr.update_layout(
+                coloraxis_colorbar=dict(title="Correlation"),
+                xaxis_title="PCA Variable",
+                yaxis_title="PCA Variable",
+            )
+            fig_corr = _base_layout(fig_corr)
 
-    return total, fraud_rate, avg_amount, n_features, fig_class, fig_geo, fig_amount, fig_time, fig_corr
+    # ---- PCA correlation with Class target
+    fig_target_corr = _empty_fig("No PCA columns or Class column found")
+    if len(pca_cols) >= 1 and "Class" in dff.columns:
+        pca_class_data = dff[pca_cols + ["Class"]].dropna()
+        if len(pca_class_data) > 0:
+            corr_with_target = pca_class_data[pca_cols + ["Class"]].corr()
+            target_corr = corr_with_target["Class"].drop("Class")
+            target_corr_abs = target_corr.abs().sort_values(ascending=False)
+            target_corr_sorted = target_corr.reindex(target_corr_abs.index)
+            
+            # Create horizontal bar chart
+            fig_target_corr = go.Figure()
+            
+            # Color bars: red for negative, teal for positive
+            colors = [ACCENT_PINK if x < 0 else ACCENT_TEAL for x in target_corr_sorted.values]
+            
+            fig_target_corr.add_trace(
+                go.Bar(
+                    x=target_corr_sorted.values,
+                    y=target_corr_sorted.index,
+                    orientation="h",
+                    marker=dict(color=colors),
+                    hovertemplate=(
+                        "<b>%{y}</b><br>"
+                        "Correlation: %{x:.3f}<br>"
+                        "|Correlation|: %{customdata:.3f}<extra></extra>"
+                    ),
+                    customdata=target_corr_abs.values,
+                )
+            )
+            
+            fig_target_corr.update_layout(
+                xaxis_title="Correlation with Class",
+                yaxis_title="PCA Variable",
+                xaxis=dict(range=[-1, 1]),
+                showlegend=False,
+            )
+            fig_target_corr.add_vline(x=0, line_dash="dash", line_color="white", opacity=0.3)
+            fig_target_corr = _base_layout(fig_target_corr)
+
+    return total, fraud_rate, avg_amount, n_features, fig_class, fig_geo, fig_amount, fig_time, fig_corr, fig_target_corr

@@ -3,7 +3,7 @@ from dash import Dash, html, dcc
 from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 
-# Professional financial dashboard theme
+# financial dashboard theme
 app = Dash(
     __name__, 
     use_pages=True, 
