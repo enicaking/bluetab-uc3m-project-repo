@@ -17,10 +17,10 @@ results_data = {
             "name": "Balanced 50/50",
             "models": {
                 "LightGBM": {
-                    "f1_score": 0.6520, # NOTE: F1 calculados sobre el threshold 0.5, no el óptimo 
+                    "f1_score": 0.6890,  
                     "f2_score": 0.7115,
                     "precision": 0.6545,
-                    "recall": 0.7727,
+                    "recall": 0.7273,
                     "auc_pr": 0.6442,
                     "roc_auc": 0.9486,
                     "best_threshold": 0.7796
@@ -58,12 +58,12 @@ results_data = {
             "name": "Balanced 63/37",
             "models": {
                 "LightGBM": {
-                    "f1_score": 0.5159,
+                    "f1_score": 0.6288,
                     "f2_score": 0.6539,
                     "precision": 0.5911,
                     "recall": 0.6717,
                     "auc_pr": 0.5626,
-                    "roc_auc": 0.9290,
+                    "roc_auc": 0.9289,
                     "best_threshold": 0.8704
                 },
                 "XGBoost": {
@@ -99,11 +99,11 @@ results_data = {
             "name": "Random Oversample",
             "models": {
                 "LightGBM": {
-                    "f1_score": 0.6714,
+                    "f1_score": 0.6497,
                     "f2_score": 0.7183,
                     "precision": 0.5604,
                     "recall": 0.7727,
-                    "auc_pr": 0.6232,
+                    "auc_pr": 0.6233,
                     "roc_auc": 0.9476,
                     "best_threshold": 0.0579
                 },
@@ -140,7 +140,7 @@ results_data = {
             "name": "Same Proportion",
             "models": {
                 "LightGBM": {
-                    "f1_score": 0.6432,
+                    "f1_score": 0.6318,
                     "f2_score": 0.6885,
                     "precision": 0.5556,
                     "recall": 0.7323,
