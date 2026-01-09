@@ -1,7 +1,7 @@
 """
 Data Exploration & EDA Page (Interactive)
 
-- Uses real data from csv_exports via utils.load_data()
+- Uses real data from content via utils.load_data()
 - Consistent styling with design_system + assets/styles.css
 """
 
@@ -43,13 +43,13 @@ except ImportError:
     def get_gradient_text_style(*args, **kwargs): return {}
 
 DATASET_OPTIONS = [
-    {"label": "Balanced 50/50", "value": "df_exp_50_2.csv"},
-    {"label": "Balanced 66/33", "value": "df_exp_63_2.csv"},
-    {"label": "Random Oversample", "value": "df_exp_random_2.csv"},
-    {"label": "Same Proportion", "value": "df_exp_same_prop_2.csv"},
+    {"label": "Balanced 50/50", "value": "df_exp_50.csv"},
+    {"label": "Balanced 66/33", "value": "df_exp_63.csv"},
+    {"label": "Random Oversample", "value": "df_exp_random.csv"},
+    {"label": "Same Proportion", "value": "df_exp_same_prop.csv"},
 ]
 
-DEFAULT_DATASET = "df_exp_50_2.csv"
+DEFAULT_DATASET = "df_exp_50.csv"
 
 # -----------------------------
 # Helpers

@@ -9,10 +9,10 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Path to CSV exports
-CSV_EXPORTS = Path(__file__).parent.parent / "notebooks" / "csv_exports"
+CSV_EXPORTS = Path(__file__).parent.parent / "content" 
 
-def load_data(dataset_name="df_exp_50_2.csv"):
-    """Load dataset from csv_exports"""
+def load_data(dataset_name="df_exp_50.csv"):
+    """Load dataset from content"""
     try:
         df = pd.read_csv(CSV_EXPORTS / dataset_name)
         if 'timestamp' in df.columns:

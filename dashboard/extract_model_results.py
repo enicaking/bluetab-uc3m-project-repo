@@ -1,19 +1,19 @@
 """
-Script para extraer resultados de modelos desde modeling3.ipynb
+Script para extraer resultados de modelos desde modelos.ipynb
 y guardarlos en formato JSON/Excel para el dashboard
+
+Basado en los resultados del notebook modelos.ipynb
+El usuario mencionó que finalmente seleccionaron Random Forest con same proportions
 """
 import pandas as pd
 import json
 from pathlib import Path
 
-# Basado en los resultados del notebook modeling3.ipynb
-# El usuario mencionó que finalmente seleccionaron Random Forest con same proportions
-
-# Estructura de resultados esperada
-# NOTE: No se hizo XGBoost, y el CatBoost solo para el 'mejor' modelo. Hay que cambiar este json y volver a generar resultados.
+# Estructura de resultados basada en modelos.ipynb
+# NOTE: Los valores vienen directamente del notebook
 results_data = {
     "datasets": {
-        "df_exp_50_2": { 
+        "df_exp_50": { 
             "name": "Balanced 50/50",
             "models": {
                 "LightGBM": {
@@ -54,7 +54,7 @@ results_data = {
                 }
             }
         },
-        "df_exp_63_2": {
+        "df_exp_63": {
             "name": "Balanced 63/37",
             "models": {
                 "LightGBM": {
@@ -95,7 +95,7 @@ results_data = {
                 }
             }
         },
-        "df_exp_random_2": {
+        "df_exp_random": {
             "name": "Random Oversample",
             "models": {
                 "LightGBM": {
@@ -136,7 +136,7 @@ results_data = {
                 }
             }
         },
-        "df_exp_same_prop_2": {
+        "df_exp_same_prop": {
             "name": "Same Proportion",
             "models": {
                 "LightGBM": {
@@ -181,7 +181,7 @@ results_data = {
         }
     },
     "best_model": {
-        "dataset": "df_exp_same_prop_2",
+        "dataset": "df_exp_same_prop",
         "model": "RandomForest",
         "f1_score": 0, # TODO: no hay f1 score en el notebook
         "f2_score": 0.8329,
@@ -194,12 +194,12 @@ results_data = {
     "metadata": {
         "extraction_date": "2026-01-07",
         "source": "modelos.ipynb",
-        "note": "Random Forest with same_prop dataset was selected as final model"
+        "note": "Random Forest with same_prop dataset was selected as final model. To calculate real ROC/PR curves and confusion matrices, run dashboard/calculate_real_metrics.py"
     }
 }
 
 # Guardar como JSON
-output_dir = Path(__file__).parent.parent / "dashboard" / "data"
+output_dir = Path(__file__).parent / "data"
 output_dir.mkdir(exist_ok=True)
 
 json_path = output_dir / "model_results.json"
@@ -256,4 +256,5 @@ print(f"\nTotal de resultados: {len(df_results)}")
 print(f"\nMejor modelo: {results_data['best_model']['model']} en {results_data['best_model']['dataset']}")
 print(f"  F2 Score: {results_data['best_model']['f2_score']:.4f}")
 print(f"  ROC-AUC: {results_data['best_model']['roc_auc']:.4f}")
-
+print("\nNOTA: Para calcular curvas ROC/PR reales y confusion matrices, ejecuta:")
+print("  python dashboard/calculate_real_metrics.py")

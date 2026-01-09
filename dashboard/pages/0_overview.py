@@ -60,7 +60,7 @@ except ImportError:
 # -----------------------------
 # Load data once
 # -----------------------------
-df = load_data("df_exp_same_prop_2.csv")  # TODO: escojer el dataset que queramos
+df = load_data("df_exp_same_prop.csv")  # TODO: escojer el dataset que queramos
 
 
 # -----------------------------

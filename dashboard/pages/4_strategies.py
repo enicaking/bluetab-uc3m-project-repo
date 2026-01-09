@@ -24,7 +24,7 @@ DARK_STYLE = {
 DARK_CARD = {"background": "#111", "border": "1px solid #333", "border-radius": "10px", "padding": "20px"}
 
 # Load data for ROI calculations
-df = load_data("df_exp_50_2.csv")
+df = load_data("df_exp_50.csv")
 roi_metrics = calculate_roi_metrics_auto(df, model_name="LightGBM") if df is not None else {}
 
 layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
@@ -202,7 +202,7 @@ layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
 )
 def update_roi_visualization(_):
     from utils import calculate_roi_metrics_auto, load_data
-    roi_metrics = calculate_roi_metrics_auto(load_data("df_exp_50_2.csv"), model_name="LightGBM")
+    roi_metrics = calculate_roi_metrics_auto(load_data("df_exp_50.csv"), model_name="LightGBM")
     
     # ROI Chart
     categories = ['Fraud Amount', 'Potential Savings', 'Investigation Cost', 'Net Benefit']
