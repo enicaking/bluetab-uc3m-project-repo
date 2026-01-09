@@ -108,7 +108,7 @@ layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
                 dbc.CardBody([
                     html.H6("Best Model", className="text-muted"),
                     html.H3(id="best-model-name", style={"color": ACCENT_PINK, "fontWeight": "700"}),
-                    html.P(id="best-model-f2", className="text-success mt-2 mb-0")
+                    html.P(id="best-model-f2", className="text-muted mt-2 mb-0")
                 ])
             ], style=PANEL_STYLE)
         ], width=12, lg=3, className="mb-4"),
@@ -144,23 +144,36 @@ layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
         ], width=12, lg=3, className="mb-4"),
     ], className="g-4"),
     
-    # Controls for model selection
+    # Controls for model selection - separate row before charts
     dbc.Row([
         dbc.Col([
             dbc.Card([
+                dbc.CardHeader([
+                    html.Span("⚙️ ", style={"marginRight": "0.5rem"}),
+                    "Model Selection"
+                ], className="text-info", style={"fontWeight": "600"}),
                 dbc.CardBody([
-                    html.Label("Select Model for Detailed Analysis", className="text-muted mb-2", style={"fontSize": "0.9rem"}),
-                    dcc.Dropdown(
-                        id="model-selector",
-                        options=[],
-                        value=None,
-                        clearable=False,
-                        placeholder="Select a model..."
-                    )
-                ])
+                    html.Label("Select Model for Detailed Analysis", className="text-muted mb-3", style={"fontSize": "0.9rem", "fontWeight": "600"}),
+                    html.Div([
+                        dcc.Dropdown(
+                            id="model-selector",
+                            options=[],
+                            value=None,
+                            clearable=False,
+                            placeholder="Select a model...",
+                            style={
+                                "backgroundColor": "#1a1a1a",
+                                "color": "#ffffff",
+                                "border": "1px solid #333",
+                                "borderRadius": "8px"
+                            },
+                            className="model-selector-dropdown"
+                        )
+                    ], style={"position": "relative", "zIndex": 1000})
+                ], style={"padding": "1.25rem"})
             ], style=PANEL_STYLE)
         ], width=12, lg=4, className="mb-4"),
-    ]),
+    ], className="mb-4"),
     
     # Performance Comparison Chart
     dbc.Row([
@@ -321,10 +334,27 @@ def update_model_metrics(_, selected_model):
         empty_fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         return ("N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", empty_fig, empty_fig, empty_fig, empty_fig, html.Div())
     
-    # Get best model info
+    # Get best model info from best_model section
     best_model_info = results.get("best_model", {})
-    best_model_name = best_model_info.get("model", "N/A")
-    best_f2_score = f"{best_model_info.get('f2_score', 0):.4f}"
+    best_model_name_raw = best_model_info.get("model", "RandomForest")
+    
+    # Format model name for display
+    if best_model_name_raw == "RandomForest":
+        best_model_name = "Random Forest"
+    elif best_model_name_raw == "LogisticRegression":
+        best_model_name = "Logistic Regression"
+    else:
+        best_model_name = best_model_name_raw
+    
+    # Get best model's actual metrics from datasets section
+    dataset_key = best_model_info.get("dataset", "df_exp_same_prop")
+    dataset_info = results.get("datasets", {}).get(dataset_key, {})
+    models_dict = dataset_info.get("models", {})
+    best_model_metrics = models_dict.get(best_model_name_raw, {})
+    
+    # Use actual metrics from the model in datasets, fallback to best_model section
+    best_model_f2_raw = best_model_metrics.get('f2_score', best_model_info.get('f2_score', 0))
+    best_f2_score = f"{best_model_f2_raw:.4f}"
     
     # Find best model for each metric
     if metrics.get('f1_scores') and any(x is not None for x in metrics['f1_scores']):
@@ -340,18 +370,31 @@ def update_model_metrics(_, selected_model):
         best_f1_score = "N/A"
         best_f1_model = "N/A"
     
-    if metrics.get('f2_scores') and any(x is not None for x in metrics['f2_scores']):
-        valid_f2 = [(i, v) for i, v in enumerate(metrics['f2_scores']) if v is not None]
-        if valid_f2:
-            best_f2_idx = max(valid_f2, key=lambda x: x[1])[0]
-            best_f2_score_val = f"{metrics['f2_scores'][best_f2_idx]:.4f}"
-            best_f2_model = metrics['models'][best_f2_idx]
+    # Get best F2 score from all models in the dataset (for Best F2 Score KPI)
+    # This finds the model with highest F2 across all models
+    if models_dict:
+        all_f2_scores = [(name, data.get('f2_score')) for name, data in models_dict.items() if data.get('f2_score') is not None]
+        if all_f2_scores:
+            best_f2_name, best_f2_val = max(all_f2_scores, key=lambda x: x[1])
+            best_f2_score_val = f"{best_f2_val:.4f}"
+            # Format model name for display
+            if best_f2_name == "RandomForest":
+                best_f2_model = "Random Forest"
+            elif best_f2_name == "LogisticRegression":
+                best_f2_model = "Logistic Regression"
+            else:
+                best_f2_model = best_f2_name
+            
+            # If the best_model is also the best F2 model, ensure values match
+            if best_f2_name == best_model_name_raw and best_f2_val != best_model_f2_raw:
+                # Use the value from datasets (more accurate) for consistency
+                best_f2_score = best_f2_score_val
         else:
-            best_f2_score_val = "N/A"
-            best_f2_model = "N/A"
+            best_f2_score_val = best_f2_score  # Fallback to best_model F2
+            best_f2_model = best_model_name
     else:
-        best_f2_score_val = "N/A"
-        best_f2_model = "N/A"
+        best_f2_score_val = best_f2_score  # Fallback to best_model F2
+        best_f2_model = best_model_name
     
     if metrics.get('auc_pr') and any(x is not None for x in metrics['auc_pr']):
         valid_auc = [(i, v) for i, v in enumerate(metrics['auc_pr']) if v is not None]
@@ -367,14 +410,18 @@ def update_model_metrics(_, selected_model):
         best_aucpr_model = "N/A"
     
     # Get selected model metrics (or default to best model)
-    selected_model_key = selected_model if selected_model else best_model_name
+    selected_model_display = selected_model if selected_model else best_model_name
+    selected_model_key = selected_model_display
     if selected_model_key == "Random Forest":
         selected_model_key = "RandomForest"
+    elif selected_model_key == "Logistic Regression":
+        selected_model_key = "LogisticRegression"
+    elif not selected_model:
+        # Use best_model_name_raw if no selection
+        selected_model_key = best_model_name_raw
+        selected_model_display = best_model_name
     
-    # Get model-specific data from JSON
-    dataset_key = best_model_info.get("dataset", "df_exp_same_prop")
-    dataset_info = results.get("datasets", {}).get(dataset_key, {})
-    models_dict = dataset_info.get("models", {})
+    # Get model-specific data from JSON (already have dataset_info and models_dict from above)
     selected_model_data = models_dict.get(selected_model_key, {})
     
     # Metrics Comparison Bar Chart
@@ -513,7 +560,7 @@ def update_model_metrics(_, selected_model):
         font={"family": "Inter", "color": "white", "size": 12},
         margin=dict(l=40, r=20, t=50, b=40),
         title=dict(
-            text=f"Confusion Matrix - {selected_model if selected_model else best_model_name}",
+            text=f"Confusion Matrix - {selected_model_display}",
             x=0.5,
             font=dict(size=14, color=ACCENT_PINK, family="Inter")
         ),
@@ -568,7 +615,7 @@ def update_model_metrics(_, selected_model):
         x=fpr,
         y=tpr,
         mode='lines',
-        name=f'{selected_model if selected_model else best_model_name} (AUC={selected_roc_auc:.4f})',
+        name=f'{selected_model_display} (AUC={selected_roc_auc:.4f})',
         line=dict(color=ACCENT_TEAL, width=3),
         fill='tonexty',
         fillcolor=f'rgba(0, 212, 255, 0.1)',
@@ -626,7 +673,7 @@ def update_model_metrics(_, selected_model):
         x=recall_vals,
         y=precision_vals,
         mode='lines',
-        name=f'{selected_model if selected_model else best_model_name} (AUC-PR={selected_auc_pr:.4f})',
+        name=f'{selected_model_display} (AUC-PR={selected_auc_pr:.4f})',
         line=dict(color=ACCENT_PINK, width=3),
         fill='tozeroy',
         fillcolor='rgba(255, 0, 85, 0.2)',
@@ -684,6 +731,7 @@ def update_model_metrics(_, selected_model):
     # Create styled table
     table_rows = []
     for i, row in metrics_df.iterrows():
+        # Compare with formatted best model name
         is_best = row['Model'] == best_model_name
         row_style = {
             "backgroundColor": "#0f0f0f" if i % 2 == 0 else "#0a0a0a",

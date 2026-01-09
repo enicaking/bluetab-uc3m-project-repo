@@ -425,6 +425,77 @@ h1 {
   100% { transform: rotate(360deg); }
 }
 
+/* ---------- Dash Dropdown Styling ---------- */
+.model-selector-dropdown,
+.model-selector-dropdown .Select-control,
+.model-selector-dropdown .Select-input,
+.model-selector-dropdown .Select-value,
+.model-selector-dropdown .Select-placeholder {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  border: 1px solid #333 !important;
+  border-radius: 8px !important;
+  min-height: 45px !important;
+}
+
+.model-selector-dropdown .Select-menu-outer {
+  background-color: #1a1a1a !important;
+  border: 1px solid #333 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+  z-index: 9999 !important;
+}
+
+.model-selector-dropdown .Select-option {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  padding: 12px 16px !important;
+}
+
+.model-selector-dropdown .Select-option:hover,
+.model-selector-dropdown .Select-option.is-focused {
+  background-color: rgba(0, 212, 255, 0.15) !important;
+  color: #00d4ff !important;
+}
+
+.model-selector-dropdown .Select-option.is-selected {
+  background-color: rgba(0, 212, 255, 0.25) !important;
+  color: #00d4ff !important;
+  font-weight: 600 !important;
+}
+
+/* Dash Dropdown (dcc.Dropdown) global styling */
+.Select--single > .Select-control .Select-value,
+.Select-placeholder {
+  color: #ffffff !important;
+  line-height: 45px !important;
+  padding-left: 12px !important;
+}
+
+.Select-arrow-zone {
+  padding-right: 12px !important;
+}
+
+.Select-arrow {
+  border-color: #888 transparent transparent !important;
+}
+
+.Select-control:hover .Select-arrow,
+.Select.is-focused .Select-arrow {
+  border-color: #00d4ff transparent transparent !important;
+}
+
+/* Ensure dropdown doesn't get cut off */
+.Select.is-open {
+  z-index: 9999 !important;
+  position: relative !important;
+}
+
+.Select-menu-outer {
+  z-index: 9999 !important;
+  position: absolute !important;
+}
+
 /* ---------- Responsive Adjustments ---------- */
 @media (max-width: 768px) {
   .kpi-value {

@@ -181,7 +181,7 @@ def get_model_metrics(dataset_key=None):
         return _empty()
     
     models_dict = dataset_info.get("models", {})
-    model_order = ["LightGBM", "XGBoost", "CatBoost", "RandomForest"]
+    model_order = ["LightGBM", "XGBoost", "CatBoost", "RandomForest", "LogisticRegression"]
     
     out = {
         "models": [],
@@ -197,7 +197,13 @@ def get_model_metrics(dataset_key=None):
         if model_name not in models_dict:
             continue
         mm = models_dict[model_name]
-        out["models"].append(model_name if model_name != "RandomForest" else "Random Forest")
+        # Format model names for display
+        display_name = model_name
+        if model_name == "RandomForest":
+            display_name = "Random Forest"
+        elif model_name == "LogisticRegression":
+            display_name = "Logistic Regression"
+        out["models"].append(display_name)
         out["f1_scores"].append(mm.get("f1_score"))   # None if absent
         out["f2_scores"].append(mm.get("f2_score"))
         out["precision"].append(mm.get("precision"))

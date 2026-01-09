@@ -5,20 +5,18 @@ desde los modelos entrenados guardados en archivos .pkl
 BASADO EN: notebooks/modelos.ipynb
 
 CÓMO EJECUTAR:
-1. Asegúrate de que los modelos .pkl estén guardados (se generan al ejecutar modelos.ipynb)
-2. Los modelos se guardan con nombres como:
-   - RandomForest: rf_model_{dataset_name}.pkl (ej: rf_model_df_same_prop_new.pkl)
-   - LightGBM: lgb_model_{dataset_name}.pkl
-   - CatBoost: catboost_model_{dataset_name}.pkl
-   - XGBoost: xgb_model_{dataset_name}.pkl
+1. Asegúrate de que los modelos .pkl estén guardados en content/models/
+2. Los modelos deben ser para df_same_prop:
+   - RandomForest: rf_model_df_same_prop_new.pkl
+   - CatBoost: catboost_model_df_same_prop_new.pkl
 3. Ejecuta desde la raíz del proyecto:
    python dashboard/calculate_real_metrics.py
 
 UBICACIÓN DE MODELOS:
-El script busca los modelos en:
-- Raíz del proyecto
-- notebooks/
-- Ruta absoluta si se especifica
+El script SOLO busca los modelos en: content/models/
+
+DATASET:
+El script SOLO procesa el dataset df_exp_same_prop (el mejor dataframe)
 
 METODOLOGÍA:
 - Usa split temporal: Día 1 (2023-01-01) = train, Día 2 (2023-01-02) = test
@@ -112,10 +110,11 @@ def calculate_real_metrics_for_model(model, X_test, y_test, model_name="Model"):
         print(f"Error calculating metrics for {model_name}: {e}")
         return None
 
-def prepare_test_data(df, date_col='timestamp', class_col='Class', pca_cols=None):
+def prepare_test_data(df, model, date_col='timestamp', class_col='Class'):
     """
     Prepare test data using temporal split (Day 2 = test set)
     Based on modelos.ipynb methodology: Day 1 = train, Day 2 = test
+    Uses the exact features that the model expects
     """
     # Try timestamp first, then date
     date_col_actual = None
@@ -151,14 +150,78 @@ def prepare_test_data(df, date_col='timestamp', class_col='Class', pca_cols=None
         test_mask[test_idx] = True
         print(f"    Warning: No timestamp/date column found, using random split")
     
-    # Get PCA columns if not specified
-    if pca_cols is None:
-        pca_cols = [f"V{i}" for i in range(1, 29) if f"V{i}" in df.columns]
+    # Get the exact features the model expects
+    # Handle different model types: sklearn models, pipelines, etc.
+    if hasattr(model, 'feature_names_'):
+        expected_features = model.feature_names_
+    elif hasattr(model, 'feature_names_in_'):
+        expected_features = model.feature_names_in_
+    elif hasattr(model, 'best_estimator_') and hasattr(model.best_estimator_, 'feature_names_in_'):
+        # For RandomizedSearchCV or similar
+        expected_features = model.best_estimator_.feature_names_in_
+    elif hasattr(model, 'named_steps') or (hasattr(model, 'steps') and len(model.steps) > 0):
+        # For Pipeline objects - try to get feature names from preprocessor
+        from sklearn.pipeline import Pipeline
+        if isinstance(model, Pipeline):
+            # Try to get feature names from the preprocessor step
+            preprocessor = None
+            if hasattr(model, 'named_steps'):
+                preprocessor = model.named_steps.get('preprocessor', None)
+            elif hasattr(model, 'steps'):
+                for name, step in model.steps:
+                    if 'preprocessor' in name.lower() or 'transform' in name.lower():
+                        preprocessor = step
+                        break
+            
+            if preprocessor and hasattr(preprocessor, 'get_feature_names_out'):
+                # We need the input features to get output features
+                # For now, use a workaround: get from the classifier if it has feature_names_in_
+                classifier = model.steps[-1][1] if hasattr(model, 'steps') else None
+                if classifier and hasattr(classifier, 'feature_names_in_'):
+                    expected_features = classifier.feature_names_in_
+                else:
+                    raise ValueError("Pipeline detected but cannot determine feature names. The model may need to be saved with feature names.")
+            else:
+                raise ValueError("Pipeline detected but preprocessor not found or doesn't have get_feature_names_out")
+        else:
+            raise ValueError("Cannot determine model features. Model must have feature_names_ or feature_names_in_")
+    else:
+        raise ValueError("Cannot determine model features. Model must have feature_names_ or feature_names_in_")
     
-    X_test = df.loc[test_mask, pca_cols].copy()
-    y_test = df.loc[test_mask, class_col].copy()
+    print(f"    Model expects {len(expected_features)} features")
     
-    return X_test, y_test
+    # Prepare test dataframe
+    test_df = df.loc[test_mask].copy()
+    
+    # Create amount_log if needed and not present
+    if 'amount_log' in expected_features and 'amount_log' not in test_df.columns:
+        if 'amount' in test_df.columns:
+            test_df['amount_log'] = np.log1p(test_df['amount'])
+        else:
+            raise ValueError("Model expects 'amount_log' but 'amount' column not found in dataset")
+    
+    # Select only the features the model expects
+    missing_features = [f for f in expected_features if f not in test_df.columns]
+    if missing_features:
+        print(f"    Warning: Missing features: {missing_features[:10]}... (total: {len(missing_features)})")
+        # Try to handle one-hot encoded features (e.g., customer_country_Algeria)
+        # Use pd.concat to avoid DataFrame fragmentation warnings
+        missing_data = {feat: 0 for feat in missing_features}
+        missing_df = pd.DataFrame(missing_data, index=test_df.index)
+        test_df = pd.concat([test_df, missing_df], axis=1)
+    
+    # Ensure all expected features are present and in correct order
+    X_test = test_df[expected_features].copy()
+    y_test = test_df[class_col].copy()
+    
+    # Convert categorical columns to string for CatBoost compatibility
+    # Identify columns that look categorical (object type or customer_country)
+    categorical_like = X_test.select_dtypes(include=['object', 'category']).columns.tolist()
+    for col in categorical_like:
+        if col in X_test.columns:
+            X_test[col] = X_test[col].astype(str)
+    
+    return X_test, y_test, expected_features
 
 def update_model_results_with_real_curves():
     """Load models and calculate real curves, then update JSON"""
@@ -170,121 +233,113 @@ def update_model_results_with_real_curves():
     
     # Paths
     models_base_dir = Path(__file__).parent.parent
-    data_dir = models_base_dir / "content" 
-
+    data_dir = models_base_dir / "content"
+    models_dir = models_base_dir / "content" / "models"
     
-    # Model files mapping - based on naming convention from modelos.ipynb
+    # Model files mapping - ONLY models in content/models for df_same_prop
     # Models are saved with: {model_type}_model_{dataset_name}.pkl
-    # NOTE: If models don't exist, the dashboard will use approximate curves from JSON metrics
     model_files = {
         "RandomForest": {
-            "df_exp_same_prop": "rf_model_df_same_prop_new.pkl",  # From modelos.ipynb
-            "df_exp_50": "rf_model_df_exp_50.pkl",
-            "df_exp_63": "rf_model_df_exp_63.pkl",
-            "df_exp_random": "rf_model_df_exp_random.pkl",
-        },
-        "LightGBM": {
-            "df_exp_same_prop": "lgb_model_df_same_prop.pkl",
-            "df_exp_50": "lgb_model_df_exp_50.pkl",
-            "df_exp_63": "lgb_model_df_exp_63.pkl",
-            "df_exp_random": "lgb_model_df_exp_random.pkl",
-        },
-        "XGBoost": {
-            "df_exp_same_prop": "xgb_model_df_same_prop.pkl",
-            "df_exp_50": "xgb_model_df_exp_50.pkl",
-            "df_exp_63": "xgb_model_df_exp_63.pkl",
-            "df_exp_random": "xgb_model_df_exp_random.pkl",
+            "df_exp_same_prop": "rf_model_df_same_prop_new.pkl",
         },
         "CatBoost": {
-            "df_exp_same_prop": "catboost_model_df_same_prop_new.pkl",  # From modelos.ipynb
-            "df_exp_50": "catboost_model_df_exp_50.pkl",
-            "df_exp_63": "catboost_model_df_exp_63.pkl",
-            "df_exp_random": "catboost_model_df_exp_random.pkl",
+            "df_exp_same_prop": "catboost_model_df_same_prop_new.pkl",
+        },
+        "LogisticRegression": {
+            "df_exp_same_prop": "lr_model_df_same_prop_new.pkl",
         }
     }
     
-    # Process each dataset and model
-    for dataset_key, dataset_info in results_data["datasets"].items():
-        print(f"\nProcessing dataset: {dataset_key}")
+    # ONLY process df_exp_same_prop (the best dataset)
+    target_dataset = "df_exp_same_prop"
+    
+    if target_dataset not in results_data["datasets"]:
+        print(f"Error: Dataset '{target_dataset}' not found in model_results.json")
+        return
+    
+    # Process only the target dataset
+    dataset_key = target_dataset
+    dataset_info = results_data["datasets"][dataset_key]
+    print(f"\nProcessing dataset: {dataset_key}")
+    
+    # Load dataset
+    csv_file = data_dir / f"{dataset_key}.csv"
+    if not csv_file.exists():
+        print(f"  Warning: CSV file not found: {csv_file}")
+        return
+    
+    df = pd.read_csv(csv_file)
+    print(f"  Loaded {len(df)} rows")
+    
+    # Process each model
+    for model_name, model_metrics in dataset_info["models"].items():
+        print(f"\n  Processing model: {model_name}")
         
-        # Load dataset
-        csv_file = data_dir / f"{dataset_key}.csv"
-        if not csv_file.exists():
-            print(f"  Warning: CSV file not found: {csv_file}")
+        # Check if model file exists
+        model_file_map = model_files.get(model_name, {})
+        model_file_name = model_file_map.get(dataset_key)
+        
+        if not model_file_name:
+            print(f"    No model file mapping found")
             continue
         
-        df = pd.read_csv(csv_file)
-        print(f"  Loaded {len(df)} rows")
+        # ONLY look in content/models directory
+        model_path = models_dir / model_file_name
         
-        # Get PCA columns
-        pca_cols = [f"V{i}" for i in range(1, 29) if f"V{i}" in df.columns]
-        if len(pca_cols) == 0:
-            print(f"  Warning: No PCA columns found")
+        if not model_path.exists():
+            print(f"    Model file not found: {model_path}")
             continue
         
-        print(f"  Found {len(pca_cols)} PCA columns")
-        
-        # Prepare test data using temporal split (Day 2 = test)
         try:
-            X_test, y_test = prepare_test_data(df, date_col='timestamp')
-            print(f"  Test set: {len(X_test)} samples ({y_test.sum()} fraud cases, {y_test.sum()/len(y_test)*100:.2f}%)")
-        except Exception as e:
-            print(f"  Error preparing test data: {e}")
-            import traceback
-            traceback.print_exc()
-            continue
-        
-        # Process each model
-        for model_name, model_metrics in dataset_info["models"].items():
-            print(f"\n  Processing model: {model_name}")
+            # Load model first to get expected features
+            model = joblib.load(model_path)
+            print(f"    Loaded model from: {model_path}")
             
-            # Check if model file exists
-            model_file_map = model_files.get(model_name, {})
-            model_file_name = model_file_map.get(dataset_key)
-            
-            if not model_file_name:
-                print(f"    No model file mapping found")
-                continue
-            
-            # Try multiple possible locations
-            possible_paths = [
-                models_base_dir / model_file_name,
-                models_base_dir / "notebooks" / model_file_name,
-                Path(model_file_name),
-            ]
-            
-            model_path = None
-            for path in possible_paths:
-                if path.exists():
-                    model_path = path
-                    break
-            
-            if not model_path or not model_path.exists():
-                print(f"    Model file not found: {model_file_name}")
-                print(f"    Tried paths: {possible_paths}")
-                continue
-            
+            # Prepare test data using temporal split (Day 2 = test)
+            # This uses the exact features the model expects
             try:
-                # Load model
-                model = joblib.load(model_path)
-                print(f"    Loaded model from: {model_path}")
-                
-                # Calculate real metrics
-                real_metrics = calculate_real_metrics_for_model(model, X_test, y_test, f"{model_name}_{dataset_key}")
-                
-                if real_metrics:
-                    # Update results with real metrics
-                    model_metrics.update(real_metrics)
-                    print(f"    Updated with real metrics")
-                    print(f"      F2 Score: {real_metrics['f2_score']:.4f}")
-                    print(f"      ROC-AUC: {real_metrics['roc_auc']:.4f}")
-                    print(f"      AUC-PR: {real_metrics['auc_pr']:.4f}")
-                else:
-                    print(f"    Failed to calculate metrics")
+                X_test, y_test, expected_features = prepare_test_data(df, model, date_col='timestamp')
+                print(f"    Test set: {len(X_test)} samples ({y_test.sum()} fraud cases, {y_test.sum()/len(y_test)*100:.2f}%)")
             except Exception as e:
-                print(f"    Error loading/calculating for {model_name}: {e}")
+                print(f"    Error preparing test data: {e}")
                 import traceback
                 traceback.print_exc()
+                continue
+            
+            # Handle CatBoost categorical features
+            if model_name == "CatBoost":
+                # CatBoost models store categorical feature indices
+                # We need to ensure those features are strings
+                if hasattr(model, 'get_cat_feature_indices'):
+                    cat_indices = model.get_cat_feature_indices()
+                    if cat_indices:
+                        cat_feature_names = [expected_features[i] for i in cat_indices if i < len(expected_features)]
+                        for col in cat_feature_names:
+                            if col in X_test.columns:
+                                # Convert to string and handle NaN
+                                X_test[col] = X_test[col].astype(str).replace('nan', 'MISSING').fillna('MISSING')
+                # Also handle object/category columns
+                cat_cols = X_test.select_dtypes(include=['object', 'category']).columns.tolist()
+                for col in cat_cols:
+                    if col in X_test.columns:
+                        X_test[col] = X_test[col].astype(str).replace('nan', 'MISSING').fillna('MISSING')
+            
+            # Calculate real metrics
+            real_metrics = calculate_real_metrics_for_model(model, X_test, y_test, f"{model_name}_{dataset_key}")
+            
+            if real_metrics:
+                # Update results with real metrics
+                model_metrics.update(real_metrics)
+                print(f"    Updated with real metrics")
+                print(f"      F2 Score: {real_metrics['f2_score']:.4f}")
+                print(f"      ROC-AUC: {real_metrics['roc_auc']:.4f}")
+                print(f"      AUC-PR: {real_metrics['auc_pr']:.4f}")
+            else:
+                print(f"    Failed to calculate metrics")
+        except Exception as e:
+            print(f"    Error loading/calculating for {model_name}: {e}")
+            import traceback
+            traceback.print_exc()
     
     # Save updated JSON
     with open(json_path, 'w', encoding='utf-8') as f:
@@ -298,8 +353,8 @@ if __name__ == "__main__":
     print("Based on: notebooks/modelos.ipynb")
     print("=" * 80)
     print("\nThis script will:")
-    print("1. Load models from .pkl files (saved when running modelos.ipynb)")
-    print("2. Load test data from content/ (Day 2 = test set)")
+    print("1. Load models from content/models/ (ONLY df_same_prop models)")
+    print("2. Load test data from content/ for df_exp_same_prop (Day 2 = test set)")
     print("3. Calculate real ROC/PR curves and confusion matrices")
     print("4. Update dashboard/data/model_results.json with real data")
     print("\n" + "=" * 80)
@@ -309,6 +364,5 @@ if __name__ == "__main__":
     
     print("\n" + "=" * 80)
     print("Done! The dashboard will now use real curves and confusion matrices.")
-    print("If models were not found, the dashboard will use approximate values")
-    print("from model_results.json (extracted from notebook outputs).")
+    print("Only models from content/models/ for df_exp_same_prop were processed.")
     print("=" * 80)
