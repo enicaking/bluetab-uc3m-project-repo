@@ -1,19 +1,19 @@
 """
-Script para extraer resultados de modelos desde modelos.ipynb
+Script para extraer resultados de modelos desde modeling3.ipynb
 y guardarlos en formato JSON/Excel para el dashboard
-
-Basado en los resultados del notebook modelos.ipynb
-El usuario mencionó que finalmente seleccionaron Random Forest con same proportions
 """
 import pandas as pd
 import json
 from pathlib import Path
 
-# Estructura de resultados basada en modelos.ipynb
-# NOTE: Los valores vienen directamente del notebook
+# Basado en los resultados del notebook modeling3.ipynb
+# El usuario mencionó que finalmente seleccionaron Random Forest con same proportions
+
+# Estructura de resultados esperada
+# NOTE: No se hizo XGBoost, y el CatBoost solo para el 'mejor' modelo. Hay que cambiar este json y volver a generar resultados.
 results_data = {
     "datasets": {
-        "df_exp_50": { 
+        "df_exp_50_2": { 
             "name": "Balanced 50/50",
             "models": {
                 "LightGBM": {
@@ -25,36 +25,36 @@ results_data = {
                     "roc_auc": 0.9486,
                     "best_threshold": 0.7796
                 },
-                "XGBoost": {
-                    "f1_score": 0.88,
-                    "f2_score": 0.90,
-                    "precision": 0.86,
-                    "recall": 0.89,
-                    "auc_pr": 0.94,
-                    "roc_auc": 0.97,
-                    "best_threshold": 0.0450
+                "XGBoost": { # eval_desbalanceado_xgboost
+                    "f1_score": 0.6884,
+                    "f2_score": 0.6905,
+                    "precision": 0.6850,
+                    "recall": 0.6919,
+                    "auc_pr": 0.6253,
+                    "roc_auc": 0.5488,
+                    "best_threshold": 0.9497
                 },
                 "RandomForest": {
-                    "f1_score": 0.00, # NOTE: Not calculated for RF
+                    "f1_score": 0.7136, 
                     "f2_score": 0.7451,
                     "precision": 0.6667,
                     "recall": 0.7677,
-                    "auc_pr": 0.6963, # NOTE: Calculated differently (RF at 0.5)
+                    "auc_pr": 0.6963, 
                     "roc_auc": 0.9545,
                     "best_threshold": 0.2822
                 },
-                "CatBoost": {
-                    "f1_score": 0.84,
-                    "f2_score": 0.86,
-                    "precision": 0.82,
-                    "recall": 0.86,
-                    "auc_pr": 0.91,
-                    "roc_auc": 0.94,
-                    "best_threshold": 0.0480
+                "CatBoost": { # eval_desbalanceado_catboost
+                    "f1_score": 0.6974,
+                    "f2_score": 0.6911,
+                    "precision": 0.7083,
+                    "recall": 0.6869,
+                    "auc_pr": 0.6563,
+                    "roc_auc": 0.9164,
+                    "best_threshold": 0.9311
                 }
             }
         },
-        "df_exp_63": {
+        "df_exp_63_2": {
             "name": "Balanced 63/37",
             "models": {
                 "LightGBM": {
@@ -66,17 +66,17 @@ results_data = {
                     "roc_auc": 0.9289,
                     "best_threshold": 0.8704
                 },
-                "XGBoost": {
-                    "f1_score": 0.87,
-                    "f2_score": 0.89,
-                    "precision": 0.85,
-                    "recall": 0.88,
-                    "auc_pr": 0.93,
-                    "roc_auc": 0.96,
-                    "best_threshold": 0.0460
+                "XGBoost": { # eval_desbalanceado_xgboost
+                    "f1_score": 0.6465,
+                    "f2_score": 0.6465,
+                    "precision": 0.6465,
+                    "recall": 0.6465,
+                    "auc_pr": 0.5373,
+                    "roc_auc": 0.9331,
+                    "best_threshold": 0.9704
                 },
                 "RandomForest": {
-                    "f1_score": 0.84, # NOTE: Número random
+                    "f1_score": 0.6853, 
                     "f2_score": 0.6832,
                     "precision": 0.6888,
                     "recall": 0.6818,
@@ -84,104 +84,104 @@ results_data = {
                     "roc_auc": 0.9494,
                     "best_threshold": 0.4253
                 },
-                "CatBoost": {
-                    "f1_score": 0.83,
-                    "f2_score": 0.85,
-                    "precision": 0.81,
-                    "recall": 0.84,
-                    "auc_pr": 0.90,
-                    "roc_auc": 0.93,
-                    "best_threshold": 0.0490
+                "CatBoost": { # eval_desbalanceado_catboost
+                    "f1_score": 0.6829,
+                    "f2_score": 0.6542,
+                    "precision": 0.7368,
+                    "recall": 0.6364,
+                    "auc_pr": 0.5875,
+                    "roc_auc": 0.9314,
+                    "best_threshold": 0.9775
                 }
             }
         },
-        "df_exp_random": {
+        "df_exp_random_2": {
             "name": "Random Oversample",
             "models": {
-                "LightGBM": {
-                    "f1_score": 0.6497,
-                    "f2_score": 0.7183,
-                    "precision": 0.5604,
-                    "recall": 0.7727,
-                    "auc_pr": 0.6233,
-                    "roc_auc": 0.9476,
-                    "best_threshold": 0.0579
+                "LightGBM": { # eval_desbalanceado_lgbm_all_vars
+                    "f1_score": 0.7976,
+                    "f2_score": 0.7803,
+                    "precision": 0.8281,
+                    "recall": 0.7692,
+                    "auc_pr": 0.7886,
+                    "roc_auc": 0.9607,
+                    "best_threshold": 0.0333
                 },
-                "XGBoost": {
-                    "f1_score": 0.6714,
-                    "f2_score": 0.7183,
-                    "precision": 0.5604,
-                    "recall": 0.7727,
-                    "auc_pr": 0.6232,
-                    "roc_auc": 0.9476,
-                    "best_threshold": 0.0579
+                "XGBoost": { # eval_desbalanceado_xgboost_all_vars
+                    "f1_score": 0.7830,
+                    "f2_score": 0.7501,
+                    "precision": 0.8448,
+                    "recall": 0.7296,
+                    "auc_pr": 0.7624,
+                    "roc_auc": 0.9673,
+                    "best_threshold": 0.2654
                 },
-                "RandomForest": {
-                    "f1_score": 0.83, # NOTE: Número random
-                    "f2_score": 0.7415,
-                    "precision": 0.7184,
-                    "recall": 0.7475,
-                    "auc_pr": 0.7014,
-                    "roc_auc": 0.9528,
-                    "best_threshold": 0.3049
+                "RandomForest": { # eval_desbalanceado_rf_all_vars
+                    "f1_score": 0.8035, 
+                    "f2_score": 0.7767,
+                    "precision": 0.8523,
+                    "recall": 0.7599,
+                    "auc_pr": 0.7831,
+                    "roc_auc": 0.9634,
+                    "best_threshold": 0.3766
                 },
-                "CatBoost": {
-                    "f1_score": 0.82,
-                    "f2_score": 0.84,
-                    "precision": 0.80,
-                    "recall": 0.83,
-                    "auc_pr": 0.89,
-                    "roc_auc": 0.92,
-                    "best_threshold": 0.0500
+                "CatBoost": { # eval_desbalanceado_catboost_all_vars
+                    "f1_score": 0.7886,
+                    "f2_score": 0.7690,
+                    "precision": 0.8236,
+                    "recall": 0.7564,
+                    "auc_pr": 0.7689,
+                    "roc_auc": 0.9343,
+                    "best_threshold": 0.6025
                 }
             }
         },
-        "df_exp_same_prop": {
+        "df_exp_same_prop_2": {
             "name": "Same Proportion",
             "models": {
-                "LightGBM": {
-                    "f1_score": 0.6318,
-                    "f2_score": 0.6885,
-                    "precision": 0.5556,
-                    "recall": 0.7323,
-                    "auc_pr": 0.5769,
-                    "roc_auc": 0.9387,
-                    "best_threshold": 0.0931,
+                "LightGBM": { # eval_desbalanceado_lgbm_all_vars
+                    "f1_score": 0.8220,
+                    "f2_score": 0.8034,
+                    "precision": 0.8552,
+                    "recall": 0.7914,
+                    "auc_pr": 0.8012,
+                    "roc_auc": 0.9600,
+                    "best_threshold": 0.0203,
                     "note": "From Cell 28 output"
                 },
-                "XGBoost": {
-                    "f1_score": 0.81,
-                    "f2_score": 0.81,
-                    "precision": 0.82,
-                    "recall": 0.81,
-                    "auc_pr": 0.84,
-                    "roc_auc": 0.97,
-                    "best_threshold": 0.0450
+                "XGBoost": { # eval_desbalanceado_xgboost_all_vars
+                    "f1_score": 0.7717,
+                    "f2_score": 0.7589,
+                    "precision": 0.7941,
+                    "recall": 0.7506,
+                    "auc_pr": 0.7683,
+                    "roc_auc": 0.9692,
+                    "best_threshold": 0.1957
                 },
-                "RandomForest": { 
-                    "f1_score": 0.85, # NOTE: Número random
-                    "f2_score": 0.6737,
-                    "precision": 0.6941,
-                    "recall": 0.7677,
-                    "auc_pr": 0.6959,
-                    "roc_auc": 0.9544,
-                    "best_threshold": 0.2494,
+                "RandomForest": { # eval_desbalanceado_rf_all_vars
+                    "f1_score": 0.8125, # NOTE: hyperparametrization does not improve
+                    "f2_score": 0.7867,
+                    "precision": 0.8596,
+                    "recall": 0.7704,
+                    "auc_pr": 0.7971,
+                    "roc_auc": 0.9678,
+                    "best_threshold": 0.3832,
                     "note": "SELECTED MODEL - Best performance on same_prop dataset"
                 },
-                "CatBoost": {
-                    "f1_score": 0.80,
-                    "f2_score": 0.80,
-                    "precision": 0.81,
-                    "recall": 0.80,
-                    "auc_pr": 0.83,
-                    "roc_auc": 0.95,
-                    "best_threshold": 0.0480
+                "CatBoost": { # eval_desbalanceado_catboost_all_vars
+                    "f1_score": 0.8179,
+                    "f2_score": 0.7799,
+                    "precision": 0.8903,
+                    "recall": 0.7564,
+                    "auc_pr": 0.7746,
+                    "roc_auc": 0.9272,
+                    "best_threshold": 0.6827
                 }
             }
         }
     },
     "best_model": {
-        "dataset": "df_exp_same_prop",
+        "dataset": "df_exp_same_prop_2",
         "model": "RandomForest",
         "f1_score": 0, # TODO: no hay f1 score en el notebook
         "f2_score": 0.8329,
@@ -194,12 +194,12 @@ results_data = {
     "metadata": {
         "extraction_date": "2026-01-07",
         "source": "modelos.ipynb",
-        "note": "Random Forest with same_prop dataset was selected as final model. To calculate real ROC/PR curves and confusion matrices, run dashboard/calculate_real_metrics.py"
+        "note": "Random Forest with same_prop dataset was selected as final model"
     }
 }
 
 # Guardar como JSON
-output_dir = Path(__file__).parent / "data"
+output_dir = Path(__file__).parent.parent / "dashboard" / "data"
 output_dir.mkdir(exist_ok=True)
 
 json_path = output_dir / "model_results.json"
@@ -256,5 +256,4 @@ print(f"\nTotal de resultados: {len(df_results)}")
 print(f"\nMejor modelo: {results_data['best_model']['model']} en {results_data['best_model']['dataset']}")
 print(f"  F2 Score: {results_data['best_model']['f2_score']:.4f}")
 print(f"  ROC-AUC: {results_data['best_model']['roc_auc']:.4f}")
-print("\nNOTA: Para calcular curvas ROC/PR reales y confusion matrices, ejecuta:")
-print("  python dashboard/calculate_real_metrics.py")
+
