@@ -1,0 +1,98 @@
+\babel@toc {english}{}\relax 
+\contentsline {chapter}{\numberline {1}INTRODUCTION}{2}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Summary}{2}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Objectives}{2}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Initial Obstacles}{2}{section.1.3}%
+\contentsline {section}{\numberline {1.4}Timeline}{2}{section.1.4}%
+\contentsline {section}{\numberline {1.5}Background}{3}{section.1.5}%
+\contentsline {subsection}{\numberline {1.5.1}Most common fraud types}{3}{subsection.1.5.1}%
+\contentsline {subsection}{\numberline {1.5.2}Regulation and obligations}{4}{subsection.1.5.2}%
+\contentsline {subsection}{\numberline {1.5.3}Technological Environment}{4}{subsection.1.5.3}%
+\contentsline {chapter}{\numberline {2}EXPLORATORY DATA ANALYSIS}{5}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Raw Data Exploration}{5}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Overview of the raw sources}{5}{subsection.2.1.1}%
+\contentsline {subsection}{\numberline {2.1.2}Variable grouping}{7}{subsection.2.1.2}%
+\contentsline {section}{\numberline {2.2}Data Merge}{7}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Class imbalance}{8}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Univariate and bivariate characteristics}{8}{subsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.2.3}Missing values}{10}{subsection.2.2.3}%
+\contentsline {subsection}{\numberline {2.2.4}Outliers}{11}{subsection.2.2.4}%
+\contentsline {subsection}{\numberline {2.2.5}Correlations}{12}{subsection.2.2.5}%
+\contentsline {chapter}{\numberline {3}FEATURE ENGINEERING}{13}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Feature Creation}{13}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Insights}{14}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Studying Leakage}{15}{section.3.3}%
+\contentsline {chapter}{\numberline {4}DATA EXPANSION}{16}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Four Initial Datasets}{16}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Eight Final Datasets}{16}{section.4.2}%
+\contentsline {chapter}{\numberline {5}MODELING}{17}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Methodology: Evolution of Validation Strategy}{17}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}Initial Diagnostic: Overfitting problem}{17}{subsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.1.2}Solution: Temporal Split and Generation of Datasets}{17}{subsection.5.1.2}%
+\contentsline {subsection}{\numberline {5.1.3}Evaluation strategy}{17}{subsection.5.1.3}%
+\contentsline {section}{\numberline {5.2}Feature and Data Selection}{17}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Step 1: Selection of Best Dataframes}{17}{subsection.5.2.1}%
+\contentsline {subsection}{\numberline {5.2.2}Step 2: Feature selection}{18}{subsection.5.2.2}%
+\contentsline {section}{\numberline {5.3}Modeling and Final Results}{18}{section.5.3}%
+\contentsline {subsection}{\numberline {5.3.1}Models}{18}{subsection.5.3.1}%
+\contentsline {subsection}{\numberline {5.3.2}Hyperparameter Tuning}{18}{subsection.5.3.2}%
+\contentsline {section}{\numberline {5.4}Conclusion}{19}{section.5.4}%
+\contentsline {chapter}{\numberline {6}DASHBOARD}{20}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Purpose and Role of the Dashboard}{20}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Design Principles}{20}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Dashboard Architecture}{21}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Overview: Descriptive Monitoring of Fraud}{21}{section.6.4}%
+\contentsline {subsection}{\numberline {6.4.1}Objective of the Overview Page}{21}{subsection.6.4.1}%
+\contentsline {subsection}{\numberline {6.4.2}Main Elements of the Overview Page}{22}{subsection.6.4.2}%
+\contentsline {section}{\numberline {6.5}Data Exploration (EDA)}{23}{section.6.5}%
+\contentsline {subsection}{\numberline {6.5.1}Objective of the EDA page}{23}{subsection.6.5.1}%
+\contentsline {subsection}{\numberline {6.5.2}User Control: Dataset Selection}{23}{subsection.6.5.2}%
+\contentsline {subsection}{\numberline {6.5.3}Main Elements of the EDA Page}{24}{subsection.6.5.3}%
+\contentsline {section}{\numberline {6.6}Modeling and Performance}{25}{section.6.6}%
+\contentsline {subsection}{\numberline {6.6.1}Objective of the Modeling Page}{25}{subsection.6.6.1}%
+\contentsline {subsection}{\numberline {6.6.2}Dataset Context}{26}{subsection.6.6.2}%
+\contentsline {subsection}{\numberline {6.6.3}Main Elements of the Modeling Page}{26}{subsection.6.6.3}%
+\contentsline {section}{\numberline {6.7}Fraud Simulator}{27}{section.6.7}%
+\contentsline {subsection}{\numberline {6.7.1}Objective of the Fraud Simulator Page}{27}{subsection.6.7.1}%
+\contentsline {subsection}{\numberline {6.7.2}Main Elements of the Fraud Simulator Page}{27}{subsection.6.7.2}%
+\contentsline {chapter}{\numberline {7}DEVELOPMENT OF STRATEGIES AND RISK MANAGEMENT MODEL}{29}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Strategic context: The transaction from the block to the identity management}{29}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Design of Prevention Strategies and Regulatory Compliance (PSD2)}{29}{section.7.2}%
+\contentsline {subsection}{\numberline {7.2.1}Operational Flow Segmentation (Traffic Light Approach)}{30}{subsection.7.2.1}%
+\contentsline {subsubsection}{\numberline {7.2.1.1}\textquotedblleft Frictionless\textquotedblright Flow (Direct Approval Zone)}{30}{subsubsection.7.2.1.1}%
+\contentsline {subsubsection}{\numberline {7.2.1.2}\textquotedblleft Smart Challenge\textquotedblright Flow (Strong Authentication Zone)}{30}{subsubsection.7.2.1.2}%
+\contentsline {subsubsection}{\numberline {7.2.1.3}Containment Flow (Blocking/Investigation Zone)}{30}{subsubsection.7.2.1.3}%
+\contentsline {section}{\numberline {7.3}Process Re-engineering: OpEx Optimization and Operational Efficiency}{31}{section.7.3}%
+\contentsline {subsection}{\numberline {7.3.1}Alert Fatigue Reduction}{31}{subsection.7.3.1}%
+\contentsline {subsection}{\numberline {7.3.2}Continuous Learning Cycle (Human-in-the-Loop)}{31}{subsection.7.3.2}%
+\contentsline {section}{\numberline {7.4}Model Governance and Explainability (XAI)}{31}{section.7.4}%
+\contentsline {subsection}{\numberline {7.4.1}Decision Transparency (SHAP Values)}{31}{subsection.7.4.1}%
+\contentsline {section}{\numberline {7.5}Estimated Impact Analysis and ROI Projections}{32}{section.7.5}%
+\contentsline {subsection}{\numberline {7.5.1}Financial Impact Matrix}{32}{subsection.7.5.1}%
+\contentsline {subsection}{\numberline {7.5.2}Savings Quantification (Cost Model)}{32}{subsection.7.5.2}%
+\contentsline {subsection}{\numberline {7.5.3}Deployment Recommendation (Roadmap)}{33}{subsection.7.5.3}%
+\contentsline {chapter}{\numberline {8}Economic Viability Analysis and Return on Investment (ROI)}{34}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Methodological Framework: From the Confusion Matrix to the Cost Matrix}{34}{section.8.1}%
+\contentsline {section}{\numberline {8.2}Unit Economics: The Fraud Cost Multiplier}{34}{section.8.2}%
+\contentsline {subsection}{\numberline {8.2.1}The 4.41x Multiplier}{34}{subsection.8.2.1}%
+\contentsline {section}{\numberline {8.3}The Hidden Cost: \textquotedblleft Insult Rate\textquotedblright {} and Customer Churn}{35}{section.8.3}%
+\contentsline {subsection}{\numberline {8.3.1}Quantifying the \textquotedblleft False Decline\textquotedblright }{35}{subsection.8.3.1}%
+\contentsline {section}{\numberline {8.4}Financial Simulation: Comparative Scenario (P\&L Impact)}{36}{section.8.4}%
+\contentsline {subsection}{\numberline {8.4.1}Financial Results Summary}{36}{subsection.8.4.1}%
+\contentsline {subsection}{\numberline {8.4.2}ROI Interpretation}{37}{subsection.8.4.2}%
+\contentsline {section}{\numberline {8.5}Operational Efficiency and Resource Reallocation (OpEx)}{37}{section.8.5}%
+\contentsline {subsection}{\numberline {8.5.1}Human Capital Optimization}{37}{subsection.8.5.1}%
+\contentsline {section}{\numberline {8.6}Sensitivity and Stress Analysis}{37}{section.8.6}%
+\contentsline {chapter}{\numberline {9}Model Risk Governance, Robustness, and Regulatory Compliance}{39}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Model Risk Management (MRM) Framework}{39}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Limitations Analysis: Temporal Bias and Seasonality}{39}{section.9.2}%
+\contentsline {subsection}{\numberline {9.2.1}Seasonal Overfitting Risk}{39}{subsection.9.2.1}%
+\contentsline {section}{\numberline {9.3}Monitoring Drift and Concept Drift}{40}{section.9.3}%
+\contentsline {subsection}{\numberline {9.3.1}Concept Drift Detection}{40}{subsection.9.3.1}%
+\contentsline {subsection}{\numberline {9.3.2}Contingency Protocol (\textit {Circuit Breaker})}{40}{subsection.9.3.2}%
+\contentsline {section}{\numberline {9.4}Explainability (XAI) and Ethical Compliance (EU AI Act)}{41}{section.9.4}%
+\contentsline {subsection}{\numberline {9.4.1}From Score to Reason: SHAP Implementation}{41}{subsection.9.4.1}%
+\contentsline {section}{\numberline {9.5}Deployment Strategy: Champion/Challenger Architecture}{41}{section.9.5}%
+\contentsline {subsection}{\numberline {9.5.1}Technological Integration Architecture}{42}{subsection.9.5.1}%
+\contentsline {section}{\numberline {9.6}Conclusions and Final Recommendation}{42}{section.9.6}%
+\contentsfinish 
