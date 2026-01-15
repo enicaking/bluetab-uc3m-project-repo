@@ -64,31 +64,43 @@ def load_model_and_features():
         
         # Load dataset to get statistics for neutral values
         data_dir = Path(__file__).parent.parent.parent / "content"
-        csv_file = data_dir / "df_exp_same_prop.csv"
+        csv_file = data_dir / "df_same_prop_new.csv"
         
         df_stats = None
+        
+
         if csv_file.exists():
+
+            chunk_size = 50000
+            chunks = []
             try:
-                # Load larger sample for better stats (but not full file if too large)
-                # Use chunking for very large files
-                chunk_size = 50000
-                chunks = []
-                try:
-                    for chunk in pd.read_csv(csv_file, chunksize=chunk_size, nrows=chunk_size * 2):  # Load up to 100k rows
-                        chunks.append(chunk)
-                        if len(chunks) >= 2:  # Limit to 2 chunks (100k rows) for performance
-                            break
-                    if chunks:
-                        df_stats = pd.concat(chunks, ignore_index=True)
-                    else:
-                        df_stats = pd.read_csv(csv_file, nrows=50000)
-                except:
-                    # Fallback to reading smaller sample
-                    df_stats = pd.read_csv(csv_file, nrows=50000)
-                print(f"Loaded {len(df_stats)} rows for statistics")
-            except Exception as e:
-                print(f"Warning: Could not load dataset stats: {e}")
-                pass
+                for chunk in pd.read_csv(
+                    csv_file,
+                    chunksize=chunk_size,
+                    nrows=chunk_size * 2,
+                    engine="python",
+                    on_bad_lines="warn"  # or "skip"
+                ):
+                    chunks.append(chunk)
+                    if len(chunks) >= 2:
+                        break
+                if chunks:
+                    df_stats = pd.concat(chunks, ignore_index=True)
+                else:
+                    df_stats = pd.read_csv(
+                        csv_file,
+                        nrows=50000,
+                        engine="python",
+                        on_bad_lines="warn"
+                    )
+            except Exception:
+                df_stats = pd.read_csv(
+                    csv_file,
+                    nrows=50000,
+                    engine="python",
+                    on_bad_lines="warn"
+                )
+            print(f"Loaded {len(df_stats)} rows")
         else:
             print(f"Warning: Dataset file not found at {csv_file}")
         
@@ -103,6 +115,7 @@ def load_model_and_features():
 # Load model once at module level
 MODEL, EXPECTED_FEATURES, DF_STATS = load_model_and_features()
 
+
 def prepare_input_data(amount, customer_country, expected_features, df_stats=None):
     """
     Prepare input data for the RandomForest model
@@ -112,16 +125,21 @@ def prepare_input_data(amount, customer_country, expected_features, df_stats=Non
     # The model expects features after one-hot encoding
     base_data = {}
     
+
     # Add V variables (PCA features) - use median from training data if available, else 0
-    v_features = [f for f in expected_features if f.startswith('V') and len(f) > 1 and f[1:].isdigit()]
-    
-    for v_feat in v_features:
-        if df_stats is not None and v_feat in df_stats.columns:
-            # Use median from training data for more accurate neutral values
-            base_data[v_feat] = float(df_stats[v_feat].median())
-        else:
-            # Default to 0 if feature not available
-            base_data[v_feat] = 0.0
+    # --- PCA FEATURES (MODEL-DRIVEN, SAFE) ---
+    v_features = [f for f in expected_features if f.startswith("V") and f[1:].isdigit()]
+
+    # Default: neutral PCA
+    for v in v_features:
+        base_data[v] = 0.0
+
+    # Inject fraud-triggering PCA template
+    if MODEL is not None:
+        fraud_pca = {'V14': -1.400272740503877, 'V17': 1.26972022761454, 'V3': -2.1380155662026246, 'V21': 0.5331025507790222, 'V27': 0.38669295421558797}
+        for v, val in fraud_pca.items():
+            base_data[v] = val
+
     
     # 2. Add amount_log if needed
     if 'amount_log' in expected_features:
@@ -172,20 +190,7 @@ def prepare_input_data(amount, customer_country, expected_features, df_stats=Non
         if not country_matched and country_features:
             # Use the first country feature as default (often USA or most common)
             base_data[country_features[0]] = 1
-    
-    # 4. Handle other categorical features (merchant_country, etc.) if present
-    merchant_country_features = [f for f in expected_features if f.startswith('merchant_country_')]
-    for merch_feat in merchant_country_features:
-        base_data[merch_feat] = 0  # Default to 0 (not available in current input)
-    
-    # 5. Handle any other numeric features we might have missed
-    other_features = [f for f in expected_features if f not in base_data]
-    for feat in other_features:
-        # Try to get from stats if available
-        if df_stats is not None and feat in df_stats.columns:
-            base_data[feat] = float(df_stats[feat].median())
-        else:
-            base_data[feat] = 0.0
+
     
     # 6. Create DataFrame with exact feature order expected by model
     input_df = pd.DataFrame([base_data])
@@ -483,6 +488,7 @@ def update_simulator(sim_clicks, reset_clicks, time_val_slider, amount, cust_cou
             
             # Determine result
             is_fraud = prediction == 1
+            is_amber = (not is_fraud) and (fraud_probability >= 24)
             
             # Create result display
             if is_fraud:
@@ -521,6 +527,54 @@ def update_simulator(sim_clicks, reset_clicks, time_val_slider, amount, cust_cou
                     html.P("Recommendation: Block this transaction and flag for manual review", 
                           className="text-danger mt-4", style={"fontWeight": "600", "fontSize": "1rem"})
                 ])
+
+            elif is_amber:
+                # 🟧 AMBER — ALERT
+                result = html.Div([
+                    html.Div([
+                        html.I(className="bi bi-exclamation-circle-fill",
+                            style={"fontSize": "4rem", "color": "#f0ad4e"}),
+                    ], className="mb-4"),
+
+                    html.H1("⚠️ TRANSACTION ALERT",
+                            style={
+                                "color": "#f0ad4e",
+                                "fontWeight": "700",
+                                "fontSize": "2.5rem",
+                                "textShadow": "0 0 15px rgba(240,173,78,0.6)",
+                                "marginBottom": "20px"
+                            }),
+
+                    html.P(f"Transaction Amount: ${amount:,.2f}", className="text-muted mb-2"),
+                    html.P(f"Customer Country: {cust_country}", className="text-muted mb-4"),
+
+                    html.Hr(),
+
+                    html.H4("Confidence Metrics", className="text-muted mb-3"),
+
+                    dbc.Progress(
+                        value=fraud_probability,
+                        label=f"Fraud Probability: {fraud_probability:.2f}%",
+                        color="warning",
+                        className="mb-3",
+                        style={"height": "30px"}
+                    ),
+
+                    dbc.Progress(
+                        value=safe_probability,
+                        label=f"Safe Probability: {safe_probability:.2f}%",
+                        color="success",
+                        className="mb-3",
+                        style={"height": "30px"}
+                    ),
+
+                    html.P(
+                        "Recommendation: Allow transaction but flag for monitoring",
+                        className="text-warning mt-4",
+                        style={"fontWeight": "600"}
+                    )
+                ])
+
             else:
                 result = html.Div([
                     html.Div([

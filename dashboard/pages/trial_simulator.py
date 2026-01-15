@@ -1,14 +1,14 @@
+import sys
+print(sys.executable)
+
 import joblib  
 import pandas as pd
 import numpy as np
 
-catboost_model = joblib.load("dashboard/models/catboost_model_df_same_prop_new.pkl")
-lr_model = joblib.load("dashboard/models/lr_model_df_same_prop_new.pkl")
-rf_hyper_model = joblib.load("dashboard/models/rf_hyperparameter_model_df_same_prop_new.pkl")
 rf_model = joblib.load("dashboard/models/rf_model_df_same_prop_new.pkl")
 
-# print(catboost_model)
-# print(catboost_model.feature_names_)
+print(rf_model)
+print(rf_model.feature_names_in_)
 
 def simulate_model(model, customer_country, amount):
     # 1. Transform the amount to amount_log
@@ -33,7 +33,7 @@ def simulate_model(model, customer_country, amount):
     }
     
     # 4. Convert to DataFrame and Ensure correct order
-    input_df = pd.DataFrame([input_data])[model.feature_names_]
+    input_df = pd.DataFrame([input_data])[model.feature_names_in_]
     
     # 5. Predict
     prediction = model.predict(input_df)[0]
@@ -43,7 +43,7 @@ def simulate_model(model, customer_country, amount):
     
     return int(prediction), formatted_probability
 
-results = simulate_model(catboost_model, "Russia", int(50000000000000))
-print(results)
+# results = simulate_model(rf_model, "Russia", int(50000000000000))
+# print(results)
 
 # print(type(catboost_model))
