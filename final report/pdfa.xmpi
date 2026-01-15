@@ -62,10 +62,6 @@
   </rdf:Description> 
   <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"> 
    <dc:format>application/pdf</dc:format> 
-   <dc:title><rdf:Alt><rdf:li xml:lang="x-default">Financial Transaction Fraud Detection</rdf:li></rdf:Alt></dc:title>
-   <dc:creator><rdf:Seq><rdf:li>Silvia Diez et al.</rdf:li></rdf:Seq></dc:creator>
-   <dc:publisher><rdf:Bag><rdf:li>UC3M</rdf:li></rdf:Bag></dc:publisher>
-   <dc:subject><rdf:Bag><rdf:li>Fraud, AI, Finance</rdf:li></rdf:Bag></dc:subject>
   </rdf:Description> 
   <rdf:Description rdf:about="" xmlns:prism="http://prismstandard.org/namespaces/basic/2.2/"> 
   </rdf:Description> 
@@ -77,15 +73,15 @@
   </rdf:Description> 
   <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/"> 
    <xmp:CreatorTool>LaTeX with hyperref</xmp:CreatorTool> 
-   <xmp:ModifyDate>2026-01-14T00:13:32+01:00</xmp:ModifyDate> 
-   <xmp:CreateDate>2026-01-14T00:13:32+01:00</xmp:CreateDate> 
-   <xmp:MetadataDate>2026-01-14T00:13:32+01:00</xmp:MetadataDate> 
+   <xmp:ModifyDate>2026-01-14T00:40:47+01:00</xmp:ModifyDate> 
+   <xmp:CreateDate>2026-01-14T00:40:47+01:00</xmp:CreateDate> 
+   <xmp:MetadataDate>2026-01-14T00:40:47+01:00</xmp:MetadataDate> 
   </rdf:Description> 
   <rdf:Description rdf:about="" xmlns:xmpRights = "http://ns.adobe.com/xap/1.0/rights/"> 
   </rdf:Description> 
   <rdf:Description rdf:about="" xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"> 
    <xmpMM:DocumentID>uuid:F84E2C61-D2D3-251D-3D59-65FDBF8819BD</xmpMM:DocumentID> 
-   <xmpMM:InstanceID>uuid:DDC8AFD4-651D-CBAC-1D91-9A3347F9AB7B</xmpMM:InstanceID> 
+   <xmpMM:InstanceID>uuid:FC7CCE40-777C-E076-CD5F-631890AD173F</xmpMM:InstanceID> 
   </rdf:Description> 
  </rdf:RDF> 
 </x:xmpmeta> 

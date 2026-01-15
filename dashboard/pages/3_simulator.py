@@ -112,45 +112,44 @@ def load_model_and_features():
         traceback.print_exc()
         return None, None, None
 
-# Load model once at module level
+# Load model and dataset
 MODEL, EXPECTED_FEATURES, DF_STATS = load_model_and_features()
-
+country_features = [f for f in EXPECTED_FEATURES if f.startswith('customer_country_')]
+cleaned_country_features = [feature.replace('customer_country_', '') for feature in country_features]
+formatted_countries = [{'label': country, 'value': country} for country in cleaned_country_features]
 
 def prepare_input_data(amount, customer_country, expected_features, df_stats=None):
     """
     Prepare input data for the RandomForest model
-    Based on eval_desbalanceado_rf_all_vars methodology
+    Based on eval_desbalanceado_rf_all_vars from modelos.ipynb
     """
-    # 1. Create base dataframe with available features
-    # The model expects features after one-hot encoding
+    # Create base dataframe with available features after one-hot encoding
     base_data = {}
-    
 
-    # Add V variables (PCA features) - use median from training data if available, else 0
-    # --- PCA FEATURES (MODEL-DRIVEN, SAFE) ---
+    # Add V variables (PCA features) 
     v_features = [f for f in expected_features if f.startswith("V") and f[1:].isdigit()]
-
-    # Default: neutral PCA
+    # Default values are neutral 
     for v in v_features:
         base_data[v] = 0.0
 
-    # Inject fraud-triggering PCA template
+    # Inject fraud-leaning PCA values but keep it standard
     if MODEL is not None:
         fraud_pca = {'V14': -1.400272740503877, 'V17': 1.26972022761454, 'V3': -2.1380155662026246, 'V21': 0.5331025507790222, 'V27': 0.38669295421558797}
         for v, val in fraud_pca.items():
             base_data[v] = val
 
     
-    # 2. Add amount_log if needed
+    # Add amount_log if needed
     if 'amount_log' in expected_features:
         base_data['amount_log'] = float(np.log1p(amount))
     elif 'amount' in expected_features:
         base_data['amount'] = float(amount)
     
-    # 3. Handle customer_country (one-hot encoded)
+    # Handle customer_country (one-hot encoded)
     # The model expects one-hot encoded country features like 'customer_country_Algeria', etc.
     country_features = [f for f in expected_features if f.startswith('customer_country_')]
-    
+    cleaned_country_features = [feature.replace('customer_country_', '') for feature in country_features]
+
     # Set all country features to 0, then set the selected one to 1
     for country_feat in country_features:
         base_data[country_feat] = 0
@@ -161,7 +160,7 @@ def prepare_input_data(amount, customer_country, expected_features, df_stats=Non
     
     if country_features:
         # Normalize country name (handle variations)
-        country_normalized = customer_country_clean.lower().replace('united states', 'usa').replace('united kingdom', 'uk')
+        country_normalized = customer_country_clean.lower().replace('united states of america', 'usa').replace('united kingdom', 'uk')
         
         for country_feat in country_features:
             # Extract country name from feature name (e.g., 'customer_country_Algeria' -> 'Algeria')
@@ -192,7 +191,7 @@ def prepare_input_data(amount, customer_country, expected_features, df_stats=Non
             base_data[country_features[0]] = 1
 
     
-    # 6. Create DataFrame with exact feature order expected by model
+    # Create DataFrame with exact feature order expected by model
     input_df = pd.DataFrame([base_data])
     
     # Ensure all expected features are present and in correct order
@@ -261,29 +260,8 @@ layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
                     html.Label("Customer Country", className="text-muted mb-2", style={"fontWeight": "600"}),
                     dcc.Dropdown(
                         id='cust-country-input',
-                        options=[
-                            {'label': 'United States', 'value': 'United States'},
-                            {'label': 'USA', 'value': 'USA'},
-                            {'label': 'Spain', 'value': 'Spain'},
-                            {'label': 'United Kingdom', 'value': 'United Kingdom'},
-                            {'label': 'UK', 'value': 'UK'},
-                            {'label': 'France', 'value': 'France'},
-                            {'label': 'Germany', 'value': 'Germany'},
-                            {'label': 'China', 'value': 'China'},
-                            {'label': 'Brazil', 'value': 'Brazil'},
-                            {'label': 'Algeria', 'value': 'Algeria'},
-                            {'label': 'Russia', 'value': 'Russia'},
-                            {'label': 'Zambia', 'value': 'Zambia'},
-                            {'label': 'Mexico', 'value': 'Mexico'},
-                            {'label': 'Canada', 'value': 'Canada'},
-                            {'label': 'Italy', 'value': 'Italy'},
-                            {'label': 'Japan', 'value': 'Japan'},
-                            {'label': 'India', 'value': 'India'},
-                            {'label': 'Australia', 'value': 'Australia'},
-                            {'label': 'Netherlands', 'value': 'Netherlands'},
-                            {'label': 'Belgium', 'value': 'Belgium'},
-                        ],
-                        value='United States',
+                        options=formatted_countries,
+                        value='United States of America',
                         className="mb-3",
                         style={
                             "backgroundColor": "#1a1a1a",
@@ -292,7 +270,7 @@ layout = dbc.Container(fluid=True, style=DARK_STYLE, children=[
                             "borderRadius": "8px"
                         },
                     ),
-                    html.P("Note: Other countries will use default values. The model uses one-hot encoded country features.", 
+                    html.P("Note: The model uses one-hot encoded country features. Type to look up.", 
                           className="text-muted mb-3", style={"fontSize": "0.8rem", "fontStyle": "italic"}),
                     
                     html.Label("Time of Day (Hour)", className="text-muted mb-2", style={"fontWeight": "600"}),
@@ -415,7 +393,7 @@ def update_simulator(sim_clicks, reset_clicks, time_val_slider, amount, cust_cou
                 html.H3("Awaiting Input...", style={"opacity": "0.5", "color": "#888"}),
                 html.P("Enter transaction details and click 'Analyze Transaction'", className="text-muted mt-3")
             ]),
-            100, 'United States', 12, time_str, model_info
+            100, 'United States of America', 12, time_str, model_info
         )
     
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
@@ -438,7 +416,7 @@ def update_simulator(sim_clicks, reset_clicks, time_val_slider, amount, cust_cou
                 html.H3("Awaiting Input...", style={"opacity": "0.5", "color": "#888"}),
                 html.P("Enter transaction details and click 'Analyze Transaction'", className="text-muted mt-3")
             ]),
-            100, 'United States', 12, time_str, model_info
+            100, 'United States of America', 12, time_str, model_info
         )
     
     # Update time display when slider changes
@@ -449,7 +427,7 @@ def update_simulator(sim_clicks, reset_clicks, time_val_slider, amount, cust_cou
                 html.P("Enter transaction details and click 'Analyze Transaction'", className="text-muted mt-3")
             ]),
             amount if amount is not None else 100, 
-            cust_country if cust_country is not None else 'United States', 
+            cust_country if cust_country is not None else 'United States of America', 
             time_val if time_val is not None else 12, 
             time_str, model_info
         )
